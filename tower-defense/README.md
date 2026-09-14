@@ -46,8 +46,8 @@ passam inteiros.
 
 ## Arte das torres
 
-Quatro torres têm sprites pintados com ciclo de tiro de três quadros; as outras
-duas ainda usam o desenho vetorial. O sistema é genérico — basta acrescentar o
+Cinco das seis torres têm sprites pintados com ciclo de tiro de três quadros; só
+a Arqueira ainda usa o desenho vetorial. O sistema é genérico — basta acrescentar o
 conjunto em `js/sprites.js` para uma torre passar a usar arte.
 
 ![Os quatro ciclos de tiro e a rotação em quatro direções](docs/sprites.png)
@@ -58,6 +58,7 @@ conjunto em `js/sprites.js` para uma torre passar a usar arte.
 | Altar Arcano | orbe carregado | feixe e arcos de energia | orbe apagado |
 | Vórtice Glacial | floco nítido | névoa girando | floco pálido e drenado |
 | Bombarda | canhão limpo | labareda e faíscas | cano fumegando |
+| Templo Rúnico | virote arcano carregado | corda solta e descarga | corda armada, vazia |
 
 Três detalhes que fazem isso funcionar:
 
@@ -65,9 +66,14 @@ Três detalhes que fazem isso funcionar:
 - **Os três quadros de cada torre são recortados na mesma janela**, centrada no
   disco de pedra. O centro do sprite é o centro da torre, então girar em direção
   ao alvo gira em torno da célula e a animação não treme entre quadros.
-- **`angleOffset` corrige a arte que aponta para cima.** O feixe do Altar e a
-  labareda da Bombarda sobem no desenho, enquanto o ângulo 0 do jogo aponta para
-  a direita.
+- **`angleOffset` corrige a arte que aponta para cima.** O feixe do Altar, a
+  labareda da Bombarda e o virote do Templo sobem no desenho, enquanto o ângulo
+  0 do jogo aponta para a direita.
+
+O Templo Rúnico tem adereços no anel externo (aljava, livros, pergaminhos) que
+só existem no quadro carregado. Isso não pisca durante a onda: com alvo em
+alcance a torre alterna apenas entre *atirou* e *recarregando*, e o quadro
+carregado só aparece quando ela fica sem alvo.
 
 A célula é de **64px** por causa disso: a 48px os três quadros ficavam
 indistinguíveis. O custo foi real — o tabuleiro caiu de 240 para 126 células — e
