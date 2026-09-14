@@ -45,6 +45,7 @@ class Enemy {
     this.dead = false;
     this.escaped = false;
     this.angle = 0;
+    this.walked = Math.random() * 40;   // desfasa o passo entre inimigos iguais
     this.wobble = Math.random() * Math.PI * 2;
   }
 
@@ -113,5 +114,8 @@ class Enemy {
 
     this.x += (dx / dist) * step;
     this.y += (dy / dist) * step;
+    // O ciclo de passo sai daqui: quem anda mais rapido pisa mais rapido,
+    // sem nenhum temporizador separado para manter em sincronia.
+    this.walked += step;
   }
 }

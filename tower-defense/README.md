@@ -150,6 +150,35 @@ dois tipos de resistência, uma célula livre e mais alcance ou área. Em
 compensação, concentra o investimento numa célula só, que cobre uma faixa do mapa
 em vez de duas.
 
+## Arte dos inimigos
+
+O Grunt tem sprite pintado com ciclo de passo de três quadros; os outros quatro
+ainda usam silhueta vetorial. O sistema é genérico — acrescente o conjunto em
+`js/mobs.js`.
+
+![Os cinco afixos no tamanho real do jogo, com marcador por cima da tinta](docs/monstros.png)
+
+Três decisões que fazem isso funcionar, e nenhuma delas é óbvia:
+
+- **O quadro vem da distância percorrida, não de um cronômetro.** Quem anda mais
+  rápido pisa mais rápido, de graça: um Veloz a 104 de velocidade dá o dobro de
+  passos de um Tanque a 34, sem nenhum timer separado para manter em sincronia.
+
+- **Os quadros são alinhados pelo centro de massa, não pela caixa delimitadora.**
+  A caixa muda de tamanho quando a espada e os braços balançam — alinhar por ela
+  fazia o monstro pulsar 13% e escorregar 44px entre quadros. Pelo centro de
+  massa, dominado pelo torso, sobra 3,5% e 13px.
+
+- **Os afixos são recoloridos no carregamento, não a cada quadro.** Numa onda
+  cheia são dezenas de inimigos a 60fps; compor a tinta em tempo real seria
+  desperdício. As cinco variantes são pré-tingidas uma vez, a 30% — o bastante
+  para o tom deslocar e pouco o bastante para a textura da armadura sobreviver.
+
+E o marcador de forma continua por cima da tinta, que é o que separa **Blindado**
+de **Rúnico**: os dois ficam acinzentados, mas um tem só as placas e o outro tem
+placas **e** halo. Cor sozinha não daria conta — era a aposta desde o começo e o
+teste confirmou.
+
 ## Inimigos: 5 silhuetas, 5 afixos
 
 As silhuetas são reaproveitadas entre todas as variantes. O que muda é o **afixo**,
@@ -199,8 +228,8 @@ Curva medida por simulação (bot que constrói no caminho, evolui e funde):
 
 | Estado | Resultado |
 |---|---|
-| Expedição 1, só o inicial | morre na onda 19 de 25 |
-| 4 desbloqueios | chega à onda 25 e cai nela |
+| Expedição 1, só o inicial | morre na onda 21 de 25 |
+| 4 desbloqueios | vence com 1 vida restante |
 | Tudo desbloqueado | vence com 36 vidas, 8 torres fundidas |
 
 Comprar tudo custa 3457 XP e uma expedição rende de 500 a 790 — cerca de **6
@@ -229,6 +258,7 @@ index.html          duas telas (menu e partida) e ordem de carga dos scripts
 css/style.css       tema, HUD, loja, inspetor e menu
 js/config.js        constantes, torres, fusões, inimigos, afixos e magias
 js/sprites.js       sprites pintados das torres, em data URI
+js/mobs.js          sprites pintados dos inimigos, com tintura por afixo
 js/maps.js          os 3 mapas
 js/meta.js          XP, desbloqueios e persistência em localStorage
 js/grid.js          grid, BFS e campo de fluxo

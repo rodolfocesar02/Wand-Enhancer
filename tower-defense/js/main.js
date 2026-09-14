@@ -7,6 +7,7 @@
 
   Meta.load();
   SpriteSheet.load();
+  MobSheet.load();
   const game = new Game();
 
   Renderer.init(canvas);

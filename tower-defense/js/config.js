@@ -272,16 +272,19 @@ const FUSIONS = {
 /* 5 silhuetas reaproveitadas. As variantes vem dos afixos, que trocam cor
  * E marcador de forma -- cor sozinha nao comunica resistencia rapido o
  * suficiente no meio de uma onda, e falha para quem tem daltonismo. */
+/* Os raios foram calibrados quando a celula tinha 48px e reescalados por
+ * 64/48 quando ela cresceu, para o inimigo manter a mesma proporcao do
+ * tabuleiro -- sem isso os sprites nao teriam pixels para existir. */
 const ENEMY_TYPES = {
-  grunt:  { name: 'Grunt',  hp: 62,   speed: 56,  gold: 8,   radius: 11, shape: 'triangulo',
+  grunt:  { name: 'Grunt',  hp: 62,   speed: 56,  gold: 8,   radius: 15, shape: 'triangulo',
             color: '#e2e8f0', leak: 1 },
-  veloz:  { name: 'Veloz',  hp: 42,   speed: 104, gold: 11,  radius: 9,  shape: 'losango',
+  veloz:  { name: 'Veloz',  hp: 42,   speed: 104, gold: 11,  radius: 12, shape: 'losango',
             color: '#5eead4', leak: 1 },
-  tanque: { name: 'Tanque', hp: 245,  speed: 34,  gold: 24,  radius: 15, shape: 'hexagono',
+  tanque: { name: 'Tanque', hp: 245,  speed: 34,  gold: 24,  radius: 20, shape: 'hexagono',
             color: '#818cf8', leak: 2 },
-  bruxo:  { name: 'Bruxo',  hp: 120,  speed: 62,  gold: 18,  radius: 12, shape: 'estrela',
+  bruxo:  { name: 'Bruxo',  hp: 120,  speed: 62,  gold: 18,  radius: 16, shape: 'estrela',
             color: '#f472b6', leak: 2 },
-  chefe:  { name: 'Chefe',  hp: 1700, speed: 31,  gold: 170, radius: 22, shape: 'chefe',
+  chefe:  { name: 'Chefe',  hp: 1700, speed: 31,  gold: 170, radius: 29, shape: 'chefe',
             color: '#f43f5e', leak: 6 }
 };
 

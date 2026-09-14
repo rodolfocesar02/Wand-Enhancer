@@ -361,11 +361,28 @@ const Renderer = {
       const kx = e.knock > 0 ? -Math.cos(e.angle) * e.knock * 4 : 0;
       const ky = e.knock > 0 ? -Math.sin(e.angle) * e.knock * 4 : 0;
 
+      const mob = MobSheet.get(e.type);
       ctx.save();
       ctx.translate(e.x + kx, e.y + ky);
-      ctx.rotate(e.angle);
-      ctx.fillStyle = e.hitFlash > 0 ? '#ffffff' : e.color;
-      this.enemyShape(ctx, e);
+
+      if (mob) {
+        // O sprite ja vem tingido pelo afixo; girar so o desenho mantem o
+        // circulo de colisao intacto.
+        ctx.rotate(e.angle + (mob.angleOffset || 0));
+        const size = (e.radius * 2) / mob.bodyRatio;
+        const imgs = mob.tinted[e.affixKey] || mob.images;
+        ctx.drawImage(imgs[MobSheet.frameFor(mob, e)], -size / 2, -size / 2, size, size);
+        if (e.hitFlash > 0) {
+          // Clarao do acerto por cima, sem repintar o sprite inteiro.
+          ctx.globalAlpha = 0.55;
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.drawImage(imgs[MobSheet.frameFor(mob, e)], -size / 2, -size / 2, size, size);
+        }
+      } else {
+        ctx.rotate(e.angle);
+        ctx.fillStyle = e.hitFlash > 0 ? '#ffffff' : e.color;
+        this.enemyShape(ctx, e);
+      }
       ctx.restore();
 
       this.enemyMarker(ctx, e, game);
