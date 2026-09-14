@@ -46,11 +46,12 @@ passam inteiros.
 
 ## Arte das torres
 
-Cinco das seis torres têm sprites pintados com ciclo de tiro de três quadros; só
-a Arqueira ainda usa o desenho vetorial. O sistema é genérico — basta acrescentar o
+As seis torres têm sprites pintados com ciclo de tiro de três quadros. O sistema
+é genérico — basta acrescentar o conjunto em `js/sprites.js`. As torres fundidas
+ainda usam o desenho vetorial. O sistema é genérico — basta acrescentar o
 conjunto em `js/sprites.js` para uma torre passar a usar arte.
 
-![Os quatro ciclos de tiro e a rotação em quatro direções](docs/sprites.png)
+![As seis torres a 64px, os estados da Arqueira e a rotação em oito direções](docs/sprites.png)
 
 | Torre | Sem alvo | Acabou de atirar | Recarregando |
 |---|---|---|---|
@@ -59,6 +60,7 @@ conjunto em `js/sprites.js` para uma torre passar a usar arte.
 | Vórtice Glacial | floco nítido | névoa girando | floco pálido e drenado |
 | Bombarda | canhão limpo | labareda e faíscas | cano fumegando |
 | Templo Rúnico | virote arcano carregado | corda solta e descarga | corda armada, vazia |
+| Arqueira | arco relaxado | flecha em voo | arco sendo armado |
 
 Três detalhes que fazem isso funcionar:
 
@@ -69,6 +71,14 @@ Três detalhes que fazem isso funcionar:
 - **`angleOffset` corrige a arte que aponta para cima.** O feixe do Altar, a
   labareda da Bombarda e o virote do Templo sobem no desenho, enquanto o ângulo
   0 do jogo aponta para a direita.
+
+Nem todo ciclo lê igual. O da Bombarda e o do Vórtice Glacial são os melhores,
+porque neles o que muda é uma massa grande e clara que aparece e some — labareda,
+névoa. O da Arqueira é o mais fraco: o arqueiro ocupa cerca de um quarto do
+diâmetro do disco, então a 64px os três quadros quase não se separam. Ela
+continua perfeitamente identificável como torre; o que não lê é a animação. O
+disparo em si o jogador percebe pelo projétil e pelo clarão de boca, que o motor
+desenha por cima em qualquer escala.
 
 O Templo Rúnico tem adereços no anel externo (aljava, livros, pergaminhos) que
 só existem no quadro carregado. Isso não pisca durante a onda: com alvo em
