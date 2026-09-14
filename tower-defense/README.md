@@ -152,9 +152,16 @@ em vez de duas.
 
 ## Arte dos inimigos
 
-O Grunt tem sprite pintado com ciclo de passo de três quadros; os outros quatro
-ainda usam silhueta vetorial. O sistema é genérico — acrescente o conjunto em
+Quatro dos cinco inimigos têm sprite pintado com ciclo de passo; só o Chefe ainda
+usa silhueta vetorial. O sistema é genérico — acrescente o conjunto em
 `js/mobs.js`.
+
+| Inimigo | Na tela | Quadros | Como se identifica |
+|---|---|---|---|
+| Veloz | 24px | 2 | magro, pálido, sem armadura |
+| Grunt | 30px | 3 | elmo prateado e manto vermelho |
+| Bruxo | 32px | 2 | manto escuro e orbe roxo |
+| Tanque | 40px | 2 | o mais largo, maça de corrente |
 
 ![Os cinco afixos no tamanho real do jogo, com marcador por cima da tinta](docs/monstros.png)
 
@@ -164,10 +171,14 @@ Três decisões que fazem isso funcionar, e nenhuma delas é óbvia:
   rápido pisa mais rápido, de graça: um Veloz a 104 de velocidade dá o dobro de
   passos de um Tanque a 34, sem nenhum timer separado para manter em sincronia.
 
-- **Os quadros são alinhados pelo centro de massa, não pela caixa delimitadora.**
-  A caixa muda de tamanho quando a espada e os braços balançam — alinhar por ela
-  fazia o monstro pulsar 13% e escorregar 44px entre quadros. Pelo centro de
-  massa, dominado pelo torso, sobra 3,5% e 13px.
+- **O alinhamento tem duas partes, e as duas são necessárias.** O *centro* vem do
+  centroide da massa de pixels, não da caixa delimitadora — a caixa cresce e
+  encolhe quando arma e braços balançam, e alinhar por ela fazia o Grunt
+  escorregar 44px entre quadros. A *escala* vem de uma janela de recorte
+  proporcional ao corpo de cada quadro, então todos saem do mesmo tamanho: sem
+  isso o Tanque pulsava 12,8% entre os dois passos, por causa da maça de corrente.
+  Tentei também um centroide "aparado", que descartava o que estava longe do
+  núcleo, e ele piorou tudo — convergia para regiões diferentes conforme a pose.
 
 - **Os afixos são recoloridos no carregamento, não a cada quadro.** Numa onda
   cheia são dezenas de inimigos a 60fps; compor a tinta em tempo real seria
