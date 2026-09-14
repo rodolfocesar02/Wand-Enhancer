@@ -39,14 +39,21 @@ const Renderer = {
 
   terrain(ctx, game) {
     const t = CONFIG.tile;
-    for (let r = 0; r < CONFIG.rows; r++) {
-      for (let c = 0; c < CONFIG.cols; c++) {
-        ctx.fillStyle = (c + r) % 2 === 0 ? '#111a2e' : '#0f1728';
-        ctx.fillRect(c * t, r * t, t, t);
+    const chao = Terrain.get(game.map.id);
+
+    if (chao) {
+      ctx.drawImage(chao, 0, 0, CONFIG.boardW, CONFIG.boardH);
+    } else {
+      // Xadrez de reserva enquanto a textura nao chegou.
+      for (let r = 0; r < CONFIG.rows; r++) {
+        for (let c = 0; c < CONFIG.cols; c++) {
+          ctx.fillStyle = (c + r) % 2 === 0 ? '#111a2e' : '#0f1728';
+          ctx.fillRect(c * t, r * t, t, t);
+        }
       }
     }
 
-    ctx.strokeStyle = 'rgba(255,255,255,.035)';
+    ctx.strokeStyle = 'rgba(255,255,255,.055)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let c = 1; c < CONFIG.cols; c++) { ctx.moveTo(c * t, 0); ctx.lineTo(c * t, CONFIG.boardH); }
@@ -57,16 +64,35 @@ const Renderer = {
     for (let r = 0; r < CONFIG.rows; r++) {
       for (let c = 0; c < CONFIG.cols; c++) {
         if (game.grid.cellAt(c, r) !== CELL.TERRENO) continue;
-        ctx.fillStyle = '#243049';
-        ctx.fillRect(c * t + 1, r * t + 1, t - 2, t - 2);
-        ctx.strokeStyle = '#334463';
-        ctx.lineWidth = 2;
+
+        // Rocha, nao bloco. Sobre a textura de pedra do mapa, o azul chapado
+        // que existia aqui destoava e parecia peca de interface.
+        const x = c * t, y = r * t;
+        ctx.fillStyle = '#0d0f12';
+        ctx.fillRect(x + 1, y + 1, t - 2, t - 2);
+
+        ctx.fillStyle = '#1c2026';
         ctx.beginPath();
-        ctx.moveTo(c * t + 9, r * t + t - 11);
-        ctx.lineTo(c * t + t / 2, r * t + 10);
-        ctx.lineTo(c * t + t - 9, r * t + t - 11);
+        ctx.moveTo(x + 7,      y + t - 8);
+        ctx.lineTo(x + 13,     y + 14);
+        ctx.lineTo(x + t / 2,  y + 7);
+        ctx.lineTo(x + t - 12, y + 17);
+        ctx.lineTo(x + t - 7,  y + t - 8);
         ctx.closePath();
+        ctx.fill();
+
+        // Aresta clara no topo: da volume sem precisar de sombra projetada.
+        ctx.strokeStyle = 'rgba(160,172,188,.22)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x + 13, y + 14);
+        ctx.lineTo(x + t / 2, y + 7);
+        ctx.lineTo(x + t - 12, y + 17);
         ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(0,0,0,.5)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 1.5, y + 1.5, t - 3, t - 3);
       }
     }
   },

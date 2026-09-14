@@ -8,6 +8,7 @@
   Meta.load();
   SpriteSheet.load();
   MobSheet.load();
+  Terrain.load();
   const game = new Game();
 
   Renderer.init(canvas);
