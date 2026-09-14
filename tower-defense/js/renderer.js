@@ -22,6 +22,7 @@ const Renderer = {
     this._clock = game.elapsed;   // altares e vortices giram sozinhos
     ctx.clearRect(0, 0, CONFIG.width, CONFIG.height);
     this.terrain(ctx, game);
+    Trail.draw(ctx);
     this.path(ctx, game);
     this.endpoints(ctx, game);
     this.walls(ctx, game);

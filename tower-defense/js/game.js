@@ -74,6 +74,8 @@ class Game {
     this.fusionEnabled = bonus.fusion;
     this.spellbook = new SpellBook(this.unlockedSpells, bonus.spellCdMul);
 
+    Trail.reset();
+
     this.screen = 'playing';
     this.restTimer = CONFIG.wavePause;
     this.emit();
@@ -337,6 +339,13 @@ class Game {
     for (const e of this.enemies) {
       if (e.dead || e.escaped) continue;
       e.update(dt);
+      // A trilha e carimbada por distancia, nao por quadro: o custo nao muda
+      // com a taxa de quadros nem com a velocidade do jogo.
+      if (e.walked - e.lastStamp >= Trail.PASSO) {
+        e.lastStamp = e.walked;
+        Trail.stamp(e);
+      }
+
       if (e.escaped) {
         this.lives -= e.leak;
         this.leaked += 1;

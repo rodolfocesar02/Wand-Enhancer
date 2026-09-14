@@ -46,6 +46,7 @@ class Enemy {
     this.escaped = false;
     this.angle = 0;
     this.walked = Math.random() * 40;   // desfasa o passo entre inimigos iguais
+    this.lastStamp = 0;                // distancia do ultimo carimbo na trilha
     this.wobble = Math.random() * Math.PI * 2;
   }
 

@@ -9,6 +9,7 @@
   SpriteSheet.load();
   MobSheet.load();
   Terrain.load();
+  Trail.init();
   const game = new Game();
 
   Renderer.init(canvas);

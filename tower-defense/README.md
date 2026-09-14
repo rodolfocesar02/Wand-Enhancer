@@ -240,6 +240,35 @@ identidade visual nenhuma.
 `BRILHO` e `DESVIO` no script de processamento são o único botão: menos desvio
 deixa o chão mais liso e o inimigo mais visível; mais desvio faz o inverso.
 
+## Trilha pisada
+
+O chão se desgasta por onde os inimigos passam. **Não é uma estrada desenhada —
+não poderia ser.** A rota deste jogo é recalculada a cada torre construída, então
+qualquer caminho pintado acabaria marcado onde ninguém passa mais.
+
+![A trilha marcando, e a rota antiga de fantasma depois de remodelar o labirinto](docs/trilha.png)
+
+Aqui a trilha emerge do tráfego: cada inimigo carimba uma mancha suave por onde
+anda, num buffer de acúmulo em meia resolução. O carimbo é disparado a cada 5
+pixels percorridos, não a cada quadro — assim o custo não muda com a taxa de
+quadros nem com a velocidade do jogo.
+
+Três decisões:
+
+- **A mancha escurece em vez de clarear.** Os inimigos são mais claros que o
+  chão, então escurecer por onde eles andam aumenta o contraste exatamente na
+  faixa onde eles estão.
+- **Nunca desbota.** O efeito colateral virou o melhor pedaço: depois de
+  remodelar o labirinto no meio da partida, a rota antiga continua marcada ao
+  lado da nova.
+- **A opacidade tem teto (`TETO`).** O carimbo acumula até saturar, mas a camada
+  nunca é desenhada a 100%: sem o teto a trilha vira um sulco preto e apaga a
+  textura do mapa justamente onde o jogador mais olha.
+
+A linha azul tracejada continua existindo e não foi substituída. Ela é
+instrumento — mostra para onde os inimigos **vão**, que é a decisão central do
+jogo. A trilha mostra por onde eles **foram**.
+
 ## Magias
 
 Habilidades ativas com recarga própria, utilizáveis no meio da onda.
