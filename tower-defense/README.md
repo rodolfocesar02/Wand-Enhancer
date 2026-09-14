@@ -152,9 +152,8 @@ em vez de duas.
 
 ## Arte dos inimigos
 
-Quatro dos cinco inimigos têm sprite pintado com ciclo de passo; só o Chefe ainda
-usa silhueta vetorial. O sistema é genérico — acrescente o conjunto em
-`js/mobs.js`.
+Os cinco inimigos têm sprite pintado com ciclo de passo. O sistema é genérico —
+acrescente o conjunto em `js/mobs.js`.
 
 | Inimigo | Na tela | Quadros | Como se identifica |
 |---|---|---|---|
@@ -162,6 +161,7 @@ usa silhueta vetorial. O sistema é genérico — acrescente o conjunto em
 | Grunt | 30px | 3 | elmo prateado e manto vermelho |
 | Bruxo | 32px | 2 | manto escuro e orbe roxo |
 | Tanque | 40px | 2 | o mais largo, maça de corrente |
+| Chefe | 58px | 2 | elmo chifrudo, crânios, machado incandescente |
 
 ![Os cinco afixos no tamanho real do jogo, com marcador por cima da tinta](docs/monstros.png)
 
