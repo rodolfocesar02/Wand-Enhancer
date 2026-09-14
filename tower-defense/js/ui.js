@@ -57,21 +57,36 @@ const UI = {
   bind() {
     const g = this.game;
     this.el.start.addEventListener('click', () => g.startRun(this.selectedMap));
-    this.el.wipe.addEventListener('click', () => {
-      if (confirm('Apagar todo o progresso permanente? Não dá para desfazer.')) {
-        Meta.reset();
-        this.sync();
-      }
+    this.armTwice(this.el.wipe, 'Apagar progresso', 'Apagar mesmo? Clique de novo', () => {
+      Meta.reset();
+      this.sync();
     });
 
     this.el.waveBtn.addEventListener('click', () => g.callWave(true));
     this.el.pause.addEventListener('click', () => g.togglePause());
     this.el.speed.addEventListener('click', () => g.cycleSpeed());
     this.el.sell.addEventListener('click', () => g.sellSelected());
-    this.el.quit.addEventListener('click', () => {
-      if (confirm('Abandonar a expedição? O XP acumulado até agora é mantido.')) g.endRun(false);
-    });
+    this.armTwice(this.el.quit, 'Abandonar', 'Abandonar mesmo? Clique de novo', () => g.endRun(false));
     this.el.overlayBtn.addEventListener('click', () => g.toMenu());
+  },
+
+  /* Confirmação em dois cliques em vez de confirm(): o diálogo nativo do
+   * navegador pode estar bloqueado quando a página roda dentro de um iframe,
+   * e aí o botão ficaria silenciosamente inerte. */
+  armTwice(btn, idleLabel, confirmLabel, action) {
+    let armed = false;
+    let timer = null;
+
+    const disarm = () => { armed = false; btn.textContent = idleLabel; btn.classList.remove('arming'); };
+
+    btn.textContent = idleLabel;
+    btn.addEventListener('click', () => {
+      if (armed) { clearTimeout(timer); disarm(); action(); return; }
+      armed = true;
+      btn.textContent = confirmLabel;
+      btn.classList.add('arming');
+      timer = setTimeout(disarm, 4000);
+    });
   },
 
   /* ============================== sync ============================== */

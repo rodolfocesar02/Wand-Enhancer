@@ -225,3 +225,6 @@ kbd {
   #hud h1 { font-size: 17px; }
   .menu-head h1 { font-size: 23px; }
 }
+
+/* Botão aguardando o segundo clique de confirmação. */
+button.arming { background: #7f1d3a; border-color: #f43f5e; color: var(--text); }
