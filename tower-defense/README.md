@@ -210,6 +210,36 @@ daltonismo.
 Os afixos entram escalonados, cada um como uma lição isolada antes de aparecer
 misturado: **Ágil na onda 4**, **Blindado na 6**, **Encantado na 9**, **Rúnico na 14**.
 
+## Terreno
+
+Cada mapa tem uma textura pintada desenhada sob a grade, e ela passa por um
+ajuste obrigatório antes de entrar no jogo: escurecida para brilho médio 20,
+contraste interno comprimido para desvio 7, dessaturada a 40%.
+
+![Os três mapas com a textura ajustada](docs/terrenos.png)
+
+Isso não é gosto, é medida. O critério é **quantas vezes a diferença de brilho
+entre o inimigo e o chão cabe dentro do ruído visual do próprio chão** — quanto
+maior, mais o inimigo se separa do fundo:
+
+| Chão | Ruído | Destaque do inimigo |
+|---|---|---|
+| Xadrez liso (o antigo) | 1,5 | 33,8× |
+| Terreno procedural | 11,7 | 3,9× |
+| Textura **crua** | 17,6 | **1,2×** — o inimigo some |
+| Textura ajustada | 7,0 | 5,6× |
+
+A textura crua é bonita e destrói o jogo: brilho 53 contra um Chefe de brilho
+59 faz o maior inimigo desaparecer no chão. Depois do ajuste o pior caso fica em
+5,6× e o Veloz, que é o menor, passa de 11×.
+
+Um terreno procedural por ruído fBm chegou a ser escrito e foi descartado:
+perdeu nas duas dimensões, menos legível que a textura ajustada e sem
+identidade visual nenhuma.
+
+`BRILHO` e `DESVIO` no script de processamento são o único botão: menos desvio
+deixa o chão mais liso e o inimigo mais visível; mais desvio faz o inverso.
+
 ## Magias
 
 Habilidades ativas com recarga própria, utilizáveis no meio da onda.
