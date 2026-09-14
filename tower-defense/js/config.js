@@ -4,9 +4,13 @@
  * Tudo que o jogo balanceia mora aqui. */
 
 const CONFIG = {
-  tile: 48,
-  cols: 20,
-  rows: 12,
+  /* Célula de 64px em vez de 48. A 48px os três quadros do sprite da Balista
+   * ficam indistinguíveis; a 64 com 12% de transbordo eles se separam. O custo
+   * é real: o tabuleiro cai de 240 para 126 células, então o labirinto fica
+   * mais curto e o balanceamento foi remedido por simulação. */
+  tile: 64,
+  cols: 14,
+  rows: 9,
   startGold: 170,
   startLives: 20,
   wavesPerRun: 25,
@@ -16,8 +20,19 @@ const CONFIG = {
   speeds: [1, 2, 3]
 };
 
-CONFIG.width = CONFIG.cols * CONFIG.tile;
-CONFIG.height = CONFIG.rows * CONFIG.tile;
+/* O canvas é mais alto que o tabuleiro: a faixa de baixo carrega as magias,
+ * desenhadas dentro do próprio canvas para ficarem a um toque de distância
+ * sem roubar espaço da área de jogo. */
+CONFIG.boardW = CONFIG.cols * CONFIG.tile;
+CONFIG.boardH = CONFIG.rows * CONFIG.tile;
+CONFIG.strip = 82;
+CONFIG.width = CONFIG.boardW;
+CONFIG.height = CONFIG.boardH + CONFIG.strip;
+
+/* Quanto o sprite de uma torre transborda a célula. Torres vistas de cima
+ * podem invadir um pouco a vizinha -- isso adensa o tabuleiro e dá ao sprite
+ * os pixels que ele precisa. */
+CONFIG.spriteOverflow = 1.12;
 
 /* ---------------------------------------------------------------- dano ---- */
 

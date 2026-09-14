@@ -6,42 +6,96 @@
   const canvas = document.getElementById('canvas');
 
   Meta.load();
+  SpriteSheet.load();
   const game = new Game();
 
   Renderer.init(canvas);
   UI.init(game);
 
   /* O canvas é redimensionado por CSS, então convertemos do espaço da tela
-   * para o espaço lógico do tabuleiro antes de descobrir a célula. */
-  function cellFromEvent(ev) {
+   * para o espaço lógico antes de descobrir onde o dedo caiu. */
+  function pointOf(ev) {
     const rect = canvas.getBoundingClientRect();
-    const x = (ev.clientX - rect.left) * (CONFIG.width / rect.width);
-    const y = (ev.clientY - rect.top) * (CONFIG.height / rect.height);
-    const c = Math.floor(x / CONFIG.tile);
-    const r = Math.floor(y / CONFIG.tile);
+    return {
+      x: (ev.clientX - rect.left) * (CONFIG.width / rect.width),
+      y: (ev.clientY - rect.top) * (CONFIG.height / rect.height)
+    };
+  }
+
+  /* Célula do tabuleiro, ou null se o ponto caiu na faixa de magias. */
+  function cellOf(pt) {
+    if (pt.y >= CONFIG.boardH) return null;
+    const c = Math.floor(pt.x / CONFIG.tile);
+    const r = Math.floor(pt.y / CONFIG.tile);
     return game.grid.inBounds(c, r) ? { c: c, r: r } : null;
   }
 
-  canvas.addEventListener('mousemove', ev => { game.hoverCell = cellFromEvent(ev); });
-  canvas.addEventListener('mouseleave', () => { game.hoverCell = null; });
+  /* Toque longo numa torre abre o menu de ações; toque curto só seleciona.
+   * O mesmo gesto serve para mouse e para dedo, então não há dois caminhos
+   * de código para manter em sincronia. */
+  const HOLD_MS = 340;
+  const HOLD_TOLERANCE = 12;
+  let press = null;
 
-  canvas.addEventListener('click', ev => {
-    const cell = cellFromEvent(ev);
-    if (cell) game.clickCell(cell.c, cell.r);
+  function cancelHold() {
+    if (press && press.timer) clearTimeout(press.timer);
+    press = null;
+  }
+
+  canvas.addEventListener('pointerdown', ev => {
+    canvas.setPointerCapture(ev.pointerId);
+    const pt = pointOf(ev);
+
+    // Faixa de magias: responde no toque, sem esperar o levantar.
+    const spell = game.hitStrip(pt.x, pt.y);
+    if (spell) {
+      game.triggerSpell(spell);
+      press = null;
+      return;
+    }
+
+    const cell = cellOf(pt);
+    game.hoverCell = cell;
+    press = { cell: cell, x: ev.clientX, y: ev.clientY, fired: false, timer: null };
+
+    if (cell && game.towerAt.has(game.key(cell.c, cell.r))) {
+      press.timer = setTimeout(() => {
+        if (!press) return;
+        press.fired = true;
+        game.openMenu(cell.c, cell.r);
+      }, HOLD_MS);
+    }
   });
 
+  canvas.addEventListener('pointermove', ev => {
+    game.hoverCell = cellOf(pointOf(ev));
+    if (!press) return;
+    if (Math.abs(ev.clientX - press.x) > HOLD_TOLERANCE ||
+        Math.abs(ev.clientY - press.y) > HOLD_TOLERANCE) {
+      cancelHold();
+    }
+  });
+
+  canvas.addEventListener('pointerup', ev => {
+    if (!press) return;
+    const fired = press.fired;
+    const cell = press.cell;
+    cancelHold();
+    if (fired || !cell) return;   // o menu já abriu: o levantar não faz mais nada
+    game.clickCell(cell.c, cell.r);
+    void ev;
+  });
+
+  canvas.addEventListener('pointercancel', cancelHold);
+  canvas.addEventListener('pointerleave', () => { game.hoverCell = null; cancelHold(); });
+
+  // No desktop o botão direito abre o mesmo menu, sem precisar segurar.
   canvas.addEventListener('contextmenu', ev => {
     ev.preventDefault();
-    game.clearSelection();
+    const cell = cellOf(pointOf(ev));
+    if (cell && game.towerAt.has(game.key(cell.c, cell.r))) game.openMenu(cell.c, cell.r);
+    else game.clearSelection();
   });
-
-  // Toque: um tap vale como hover + clique.
-  canvas.addEventListener('touchstart', ev => {
-    if (!ev.touches.length) return;
-    ev.preventDefault();
-    const cell = cellFromEvent(ev.touches[0]);
-    if (cell) { game.hoverCell = cell; game.clickCell(cell.c, cell.r); }
-  }, { passive: false });
 
   window.addEventListener('keydown', ev => {
     if (game.screen === 'menu') return;

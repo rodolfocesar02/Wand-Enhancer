@@ -57,7 +57,21 @@
 
     <main id="stage">
       <div id="board">
-        <canvas id="canvas" width="960" height="576"></canvas>
+        <canvas id="canvas" width="896" height="658"></canvas>
+
+        <!-- Menu de ações da torre: abre com toque longo sobre ela. -->
+        <div id="tower-menu" class="tower-menu" hidden>
+          <header>
+            <strong id="tm-name">Torre</strong>
+            <button id="tm-close" class="tm-x" aria-label="Fechar">✕</button>
+          </header>
+          <div id="tm-split" class="split"></div>
+          <dl id="tm-stats"></dl>
+          <div id="tm-branches" class="branches"></div>
+          <div id="tm-fusion" class="fusion"></div>
+          <button id="tm-sell" class="danger"></button>
+        </div>
+
         <div id="overlay" class="overlay" hidden>
           <div class="panel">
             <h2 id="overlay-title">Fim</h2>
@@ -66,47 +80,26 @@
             <button id="overlay-btn" class="primary">Voltar ao menu</button>
           </div>
         </div>
-        <div id="spellbar" class="spellbar"></div>
       </div>
 
-      <aside id="sidebar">
-        <section class="shop">
-          <h3>Torres</h3>
-          <div id="shop-list"></div>
-        </section>
-
-        <section id="inspector" class="inspector" hidden>
-          <h3 id="insp-name">Torre</h3>
-          <div id="insp-split" class="split"></div>
-          <dl id="insp-stats"></dl>
-          <div id="insp-branches" class="branches"></div>
-          <div id="insp-fusion" class="fusion"></div>
-          <button id="btn-sell" class="danger"></button>
-        </section>
-
-        <section class="controls">
-          <div id="wave-preview" class="wave-preview"></div>
+      <!-- Dock enxuto: só o que não cabe no canvas. -->
+      <div id="dock">
+        <div id="shop-list" class="shop-row"></div>
+        <div class="dock-controls">
           <button id="btn-wave" class="primary">Chamar onda</button>
-          <div class="control-row">
-            <button id="btn-pause">Pausar</button>
-            <button id="btn-speed">1x</button>
-          </div>
+          <button id="btn-pause">Pausar</button>
+          <button id="btn-speed">1x</button>
           <button id="btn-quit" class="ghost">Abandonar</button>
-        </section>
-
-        <section class="legend">
-          <h3>Atalhos</h3>
-          <ul id="legend-list"></ul>
-        </section>
-      </aside>
+        </div>
+        <p id="hint"></p>
+      </div>
     </main>
-
-    <p id="hint"></p>
   </div>
 </div>
 
 <script src="js/config.js"></script>
 <script src="js/maps.js"></script>
+<script src="js/sprites.js"></script>
 <script src="js/meta.js"></script>
 <script src="js/grid.js"></script>
 <script src="js/damage.js"></script>

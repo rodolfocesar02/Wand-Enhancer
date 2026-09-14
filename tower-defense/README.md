@@ -15,6 +15,10 @@ sem build, sem servidor: abra o `index.html` no navegador e jogue.
 2. Abra `index.html` (duplo clique já funciona — os scripts são clássicos, não módulos ES).
 3. Compre o que der no menu, escolha o mapa e inicie a expedição.
 
+No tabuleiro: **toque curto** numa torre seleciona e mostra o alcance;
+**toque longo** (ou botão direito) abre o menu de evolução, fusão e venda.
+As magias ficam na faixa dentro do próprio canvas, logo abaixo do tabuleiro.
+
 Prefere servir por HTTP? `npx serve .` ou `python3 -m http.server` também funcionam.
 
 ## A mecânica central: o caminho não é fixo
@@ -39,6 +43,35 @@ chega a 100%** — a torre errada sempre faz alguma coisa, só faz pouco.
 É isso que faz a variedade de torres importar: contra um Blindado (62% de
 resistência física), 100 de dano físico viram 38, enquanto 100 de dano mágico
 passam inteiros.
+
+## Arte das torres
+
+Quatro torres têm sprites pintados com ciclo de tiro de três quadros; as outras
+duas ainda usam o desenho vetorial. O sistema é genérico — basta acrescentar o
+conjunto em `js/sprites.js` para uma torre passar a usar arte.
+
+![Os quatro ciclos de tiro e a rotação em quatro direções](docs/sprites.png)
+
+| Torre | Sem alvo | Acabou de atirar | Recarregando |
+|---|---|---|---|
+| Balista | virote carregado | corda solta | corda armada, vazia |
+| Altar Arcano | orbe carregado | feixe e arcos de energia | orbe apagado |
+| Vórtice Glacial | floco nítido | névoa girando | floco pálido e drenado |
+| Bombarda | canhão limpo | labareda e faíscas | cano fumegando |
+
+Três detalhes que fazem isso funcionar:
+
+- **O quadro sai da recarga que a torre já controla**, não de um timer separado.
+- **Os três quadros de cada torre são recortados na mesma janela**, centrada no
+  disco de pedra. O centro do sprite é o centro da torre, então girar em direção
+  ao alvo gira em torno da célula e a animação não treme entre quadros.
+- **`angleOffset` corrige a arte que aponta para cima.** O feixe do Altar e a
+  labareda da Bombarda sobem no desenho, enquanto o ângulo 0 do jogo aponta para
+  a direita.
+
+A célula é de **64px** por causa disso: a 48px os três quadros ficavam
+indistinguíveis. O custo foi real — o tabuleiro caiu de 240 para 126 células — e
+o balanceamento foi remedido por simulação.
 
 ## As 6 torres
 
@@ -150,9 +183,9 @@ Curva medida por simulação (bot que constrói no caminho, evolui e funde):
 
 | Estado | Resultado |
 |---|---|
-| Expedição 1, só o inicial | morre na onda 22 de 25 |
-| 4 desbloqueios | vence com 15 de 20 vidas |
-| Tudo desbloqueado | vence com 36 vidas, 12 torres fundidas |
+| Expedição 1, só o inicial | morre na onda 19 de 25 |
+| 4 desbloqueios | chega à onda 25 e cai nela |
+| Tudo desbloqueado | vence com 36 vidas, 8 torres fundidas |
 
 Comprar tudo custa 3457 XP e uma expedição rende de 500 a 790 — cerca de **6
 expedições** para o arco completo.
@@ -164,6 +197,7 @@ expedições** para o arco completo.
 | Tecla | Ação |
 |---|---|
 | `1` … `6` | Escolher torre (na ordem da loja) |
+| Toque longo | Abrir o menu da torre (evoluir, fundir, vender) |
 | `Q` `W` `E` `R` | Lançar magia |
 | `N` | Chamar a próxima onda |
 | `Espaço` | Pausar / retomar |
@@ -178,6 +212,7 @@ que sobrou. Há também controle de velocidade (1x / 2x / 3x).
 index.html          duas telas (menu e partida) e ordem de carga dos scripts
 css/style.css       tema, HUD, loja, inspetor e menu
 js/config.js        constantes, torres, fusões, inimigos, afixos e magias
+js/sprites.js       sprites pintados das torres, em data URI
 js/maps.js          os 3 mapas
 js/meta.js          XP, desbloqueios e persistência em localStorage
 js/grid.js          grid, BFS e campo de fluxo
@@ -191,6 +226,7 @@ js/renderer.js      desenho em Canvas 2D
 js/ui.js            ponte entre estado e DOM
 js/game.js          estado e regras
 js/main.js          entrada, loop e atalhos
+assets/sprites/     os quadros já recortados, em PNG com transparência
 docs/               capturas usadas neste README
 ```
 

@@ -90,8 +90,8 @@ const Spells = {
       e.applySlow(def.slow, def.duration);
     }
     game.effects.push({
-      x: CONFIG.width / 2, y: CONFIG.height / 2,
-      radius: Math.max(CONFIG.width, CONFIG.height), life: 0.45, max: 0.45, color: def.color
+      x: CONFIG.boardW / 2, y: CONFIG.boardH / 2,
+      radius: Math.max(CONFIG.boardW, CONFIG.boardH), life: 0.45, max: 0.45, color: def.color
     });
     game.screenTint = { color: def.color, life: 0.6, max: 0.6 };
     return true;

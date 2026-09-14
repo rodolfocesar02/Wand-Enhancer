@@ -3,14 +3,16 @@
 /* Ponte entre estado e DOM.
  *
  * Dois ritmos de propósito: sync() reconstrói DOM (caro, só quando o estado
- * muda) e tick() atualiza números e recargas (barato, todo quadro). Refazer
- * innerHTML 60 vezes por segundo quebraria hover e desperdiçaria trabalho. */
+ * muda) e tick() atualiza números (barato, todo quadro). Refazer innerHTML 60
+ * vezes por segundo quebraria hover e desperdiçaria trabalho.
+ *
+ * As magias não aparecem aqui: elas são desenhadas dentro do canvas, para
+ * ficarem a um toque de distância durante a onda. */
 
 const UI = {
   init(game) {
     this.game = game;
     this.selectedMap = 'planicie';
-    this.cache = {};
 
     this.el = {
       screenMenu: document.getElementById('screen-menu'),
@@ -22,25 +24,27 @@ const UI = {
       start: document.getElementById('btn-start'),
       wipe: document.getElementById('btn-wipe'),
 
+      board: document.getElementById('board'),
+      canvas: document.getElementById('canvas'),
       gold: document.getElementById('stat-gold'),
       lives: document.getElementById('stat-lives'),
       wave: document.getElementById('stat-wave'),
       score: document.getElementById('stat-score'),
       shop: document.getElementById('shop-list'),
-      spellbar: document.getElementById('spellbar'),
-      inspector: document.getElementById('inspector'),
-      inspName: document.getElementById('insp-name'),
-      inspSplit: document.getElementById('insp-split'),
-      inspStats: document.getElementById('insp-stats'),
-      inspBranches: document.getElementById('insp-branches'),
-      inspFusion: document.getElementById('insp-fusion'),
-      sell: document.getElementById('btn-sell'),
-      wavePreview: document.getElementById('wave-preview'),
+
+      menu: document.getElementById('tower-menu'),
+      tmName: document.getElementById('tm-name'),
+      tmClose: document.getElementById('tm-close'),
+      tmSplit: document.getElementById('tm-split'),
+      tmStats: document.getElementById('tm-stats'),
+      tmBranches: document.getElementById('tm-branches'),
+      tmFusion: document.getElementById('tm-fusion'),
+      tmSell: document.getElementById('tm-sell'),
+
       waveBtn: document.getElementById('btn-wave'),
       pause: document.getElementById('btn-pause'),
       speed: document.getElementById('btn-speed'),
       quit: document.getElementById('btn-quit'),
-      legend: document.getElementById('legend-list'),
       overlay: document.getElementById('overlay'),
       overlayTitle: document.getElementById('overlay-title'),
       overlayText: document.getElementById('overlay-text'),
@@ -65,9 +69,12 @@ const UI = {
     this.el.waveBtn.addEventListener('click', () => g.callWave(true));
     this.el.pause.addEventListener('click', () => g.togglePause());
     this.el.speed.addEventListener('click', () => g.cycleSpeed());
-    this.el.sell.addEventListener('click', () => g.sellSelected());
+    this.el.tmSell.addEventListener('click', () => g.sellSelected());
+    this.el.tmClose.addEventListener('click', () => g.closeMenu());
     this.armTwice(this.el.quit, 'Abandonar', 'Abandonar mesmo? Clique de novo', () => g.endRun(false));
     this.el.overlayBtn.addEventListener('click', () => g.toMenu());
+
+    window.addEventListener('resize', () => { if (g.menuTower) this.placeMenu(g.menuTower); });
   },
 
   /* Confirmação em dois cliques em vez de confirm(): o diálogo nativo do
@@ -76,7 +83,6 @@ const UI = {
   armTwice(btn, idleLabel, confirmLabel, action) {
     let armed = false;
     let timer = null;
-
     const disarm = () => { armed = false; btn.textContent = idleLabel; btn.classList.remove('arming'); };
 
     btn.textContent = idleLabel;
@@ -97,13 +103,10 @@ const UI = {
 
     this.el.screenMenu.hidden = !menu;
     this.el.screenGame.hidden = menu;
-
     if (menu) { this.syncMenu(); return; }
 
     this.syncShop();
-    this.syncSpellbar();
-    this.syncInspector();
-    this.syncLegend();
+    this.syncTowerMenu();
     this.syncOverlay();
     this.tick();
   },
@@ -171,53 +174,38 @@ const UI = {
     this.shopButtons = {};
     this.el.shop.innerHTML = '';
 
-    for (const key of g.unlockedTowers) {
+    for (let i = 0; i < g.unlockedTowers.length; i++) {
+      const key = g.unlockedTowers[i];
       const def = TOWER_TYPES[key];
       const btn = document.createElement('button');
-      btn.className = 'shop-item';
+      btn.className = 'shop-chip';
+      btn.title = def.blurb;
       btn.innerHTML =
         '<span class="swatch" style="background:' + def.color + '"></span>' +
-        '<span><strong>' + def.name + '</strong><small>' + def.blurb + '</small></span>' +
-        '<span class="price">' + def.cost + '</span>';
+        '<span class="chip-name">' + def.name + '</span>' +
+        '<span class="price">' + def.cost + '</span>' +
+        '<span class="chip-key">' + (i + 1) + '</span>';
       btn.addEventListener('click', () => g.selectType(key));
       this.el.shop.appendChild(btn);
       this.shopButtons[key] = btn;
     }
   },
 
-  syncSpellbar() {
+  /* O menu de ações abre por toque longo sobre a torre e flutua ao lado
+   * dela, em vez de morar numa barra lateral que exigia rolagem. */
+  syncTowerMenu() {
     const g = this.game;
-    this.spellButtons = {};
-    this.el.spellbar.innerHTML = '';
-
-    for (const slot of g.spellbook.slots) {
-      const btn = document.createElement('button');
-      btn.className = 'spell';
-      btn.innerHTML =
-        '<span class="hot" style="background:' + slot.def.color + '">' + slot.def.hotkey + '</span>' +
-        '<strong>' + slot.def.name + '</strong>' +
-        '<small class="cdtext">pronta</small>' +
-        '<span class="cdfill"></span>';
-      btn.title = slot.def.desc;
-      btn.addEventListener('click', () => g.triggerSpell(slot.key));
-      this.el.spellbar.appendChild(btn);
-      this.spellButtons[slot.key] = btn;
-    }
-  },
-
-  syncInspector() {
-    const g = this.game;
-    const t = g.selectedTower;
+    const t = g.menuTower;
     const e = this.el;
 
-    if (!t) { e.inspector.hidden = true; return; }
-    e.inspector.hidden = false;
+    if (!t || g.towers.indexOf(t) === -1) { e.menu.hidden = true; return; }
+    e.menu.hidden = false;
 
     const s = t.stats;
     const total = s.dmg.fisico + s.dmg.magico;
 
-    e.inspName.textContent = t.label;
-    e.inspSplit.innerHTML = total > 0
+    e.tmName.textContent = t.label;
+    e.tmSplit.innerHTML = total > 0
       ? '<i class="f" style="width:' + (s.dmg.fisico / total * 100) + '%"></i>' +
         '<i class="m" style="width:' + (s.dmg.magico / total * 100) + '%"></i>'
       : '';
@@ -231,10 +219,9 @@ const UI = {
     if (s.splash) rows.push(['Área', Math.round(s.splash)]);
     if (s.slow) rows.push(['Lentidão', Math.round(s.slow * 100) + '%']);
     if (s.pierce) rows.push(['Perfuração', s.pierce]);
-    e.inspStats.innerHTML = rows.map(r => '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>').join('');
+    e.tmStats.innerHTML = rows.map(r => '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>').join('');
 
-    // Ramos de evolução: o jogador escolhe um dos dois, e a escolha é final.
-    e.inspBranches.innerHTML = '';
+    e.tmBranches.innerHTML = '';
     for (const branch of t.nextBranches) {
       const btn = document.createElement('button');
       btn.className = 'branch';
@@ -244,22 +231,52 @@ const UI = {
         '<small>' + branch.desc + '</small>';
       btn.disabled = g.gold < branch.cost;
       btn.addEventListener('click', () => g.upgradeSelected(branch.key));
-      e.inspBranches.appendChild(btn);
+      e.tmBranches.appendChild(btn);
     }
 
     this.syncFusion(t);
-    e.sell.textContent = 'Vender (+' + t.sellValue + ')';
+    e.tmSell.textContent = 'Vender (+' + t.sellValue + ')';
+    this.placeMenu(t);
   },
 
-  /* O painel de fusão precisa ENSINAR, não só recusar.
-   *
-   * Só 6 dos 15 pares têm receita e só vizinhas ortogonais contam, então
-   * "nenhuma vizinha forma receita" deixava o jogador sem saber o que
-   * tentar. Agora o painel sempre lista com o que esta torre combina, e diz
-   * exatamente o que falta quando a vizinha certa já está do lado. */
+  /* O menu flutua ao lado da torre e é preso dentro do tabuleiro, para não
+   * vazar da tela nem cobrir a torre que ele descreve. */
+  placeMenu(t) {
+    const e = this.el;
+
+    // Em tela estreita o menu é uma gaveta presa embaixo pelo CSS. Posicionar
+    // por inline style aqui brigaria com isso, então limpamos e saímos.
+    if (window.matchMedia('(max-width: 760px)').matches) {
+      e.menu.style.left = '';
+      e.menu.style.top = '';
+      return;
+    }
+
+    const cr = e.canvas.getBoundingClientRect();
+    const br = e.board.getBoundingClientRect();
+    if (!cr.width) return;
+
+    const scale = cr.width / CONFIG.width;
+    const offX = cr.left - br.left;
+    const offY = cr.top - br.top;
+    const w = e.menu.offsetWidth;
+    const h = e.menu.offsetHeight;
+    const gap = 10;
+
+    let x = offX + (t.c + 1) * CONFIG.tile * scale + gap;
+    if (x + w > offX + cr.width) x = offX + t.c * CONFIG.tile * scale - w - gap;
+    x = Math.max(offX + 4, Math.min(x, offX + cr.width - w - 4));
+
+    let y = offY + (t.r + 0.5) * CONFIG.tile * scale - h / 2;
+    y = Math.max(offY + 4, Math.min(y, offY + cr.height - h - 4));
+
+    e.menu.style.left = Math.round(x) + 'px';
+    e.menu.style.top = Math.round(y) + 'px';
+  },
+
   syncFusion(t) {
     const g = this.game;
-    const e = this.el.inspFusion;
+    const e = this.el.tmFusion;
     e.innerHTML = '';
 
     if (!g.fusionEnabled || t.fused) return;
@@ -275,50 +292,31 @@ const UI = {
       e.appendChild(btn);
     }
 
-    // Vizinha ortogonal que forma receita mas ainda não chegou ao nível 3.
     const quaseLa = [];
     for (const d of DIRS) {
       const other = g.towerAt.get(g.key(t.c + d[0], t.r + d[1]));
       if (!other || other.fused) continue;
-      const recipe = FUSIONS[fusionKey(t.typeKey, other.typeKey)];
-      if (!recipe) continue;
-      if (other.maxLevel && t.maxLevel) continue;   // já virou botão acima
+      if (!FUSIONS[fusionKey(t.typeKey, other.typeKey)]) continue;
+      if (other.maxLevel && t.maxLevel) continue;
       quaseLa.push((!t.maxLevel ? 'Esta torre' : other.def.name) + ' precisa chegar ao nível 3');
     }
 
-    const linhas = [];
-    for (const q of quaseLa) linhas.push('<span class="hintline warn">' + q + '.</span>');
-
+    const linhas = quaseLa.map(q => '<span class="hintline warn">' + q + '.</span>');
     if (options.length === 0 && quaseLa.length === 0) {
       const receitas = fusionsFor(t.typeKey)
         .map(f => '<b>' + TOWER_TYPES[f.partner].name + '</b> → ' + f.def.name)
         .join('<br>');
-      linhas.push(
-        '<span class="hintline">Combina com (nível 3 nas duas, lado a lado, sem diagonal):<br>' +
-        receitas + '</span>');
+      linhas.push('<span class="hintline">Combina com (nível 3 nas duas, lado a lado, sem diagonal):<br>' +
+                  receitas + '</span>');
     }
 
     // appendChild, nunca innerHTML += : concatenar innerHTML re-serializa e
-    // recria todo o subárvore, o que descarta os listeners dos botões de
-    // fusão anexados logo acima -- inclusive quando a string somada é vazia.
+    // recria todo o subárvore, o que descarta os listeners dos botões acima.
     if (linhas.length) {
       const box = document.createElement('div');
       box.innerHTML = linhas.join('');
       while (box.firstChild) e.appendChild(box.firstChild);
     }
-  },
-
-  syncLegend() {
-    const g = this.game;
-    const items = [];
-    g.unlockedTowers.forEach((k, i) => {
-      items.push('<kbd>' + (i + 1) + '</kbd> ' + TOWER_TYPES[k].name);
-    });
-    for (const slot of g.spellbook.slots) {
-      items.push('<kbd>' + slot.def.hotkey + '</kbd> ' + slot.def.name);
-    }
-    items.push('<kbd>N</kbd> chamar onda', '<kbd>Espaço</kbd> pausar', '<kbd>Esc</kbd> cancelar');
-    this.el.legend.innerHTML = items.map(i => '<li>' + i + '</li>').join('');
   },
 
   syncOverlay() {
@@ -341,7 +339,6 @@ const UI = {
 
   /* ============================== tick ============================== */
 
-  /* Só números e estados — nada de innerHTML estrutural aqui. */
   tick() {
     const g = this.game;
     if (g.screen === 'menu') return;
@@ -358,17 +355,6 @@ const UI = {
       btn.disabled = g.gold < TOWER_TYPES[key].cost || g.screen !== 'playing';
     }
 
-    for (const slot of g.spellbook.slots) {
-      const btn = this.spellButtons[slot.key];
-      if (!btn) continue;
-      const k = slot.maxCd > 0 ? slot.cd / slot.maxCd : 0;
-      btn.classList.toggle('armed', g.spellbook.pending === slot.key);
-      btn.disabled = g.screen !== 'playing';
-      btn.querySelector('.cdfill').style.transform = 'scaleY(' + k.toFixed(3) + ')';
-      btn.querySelector('.cdtext').textContent =
-        slot.cd > 0 ? Math.ceil(slot.cd) + 's' : (slot.def.targeted ? 'clique no mapa' : 'pronta');
-    }
-
     const playing = g.screen === 'playing';
     const finished = g.wave >= CONFIG.wavesPerRun;
     e.waveBtn.disabled = !playing || g.waveInProgress || finished;
@@ -380,34 +366,25 @@ const UI = {
     e.pause.disabled = !playing;
     e.speed.textContent = g.speed + 'x';
 
-    this.tickPreview();
     this.tickHint();
-  },
-
-  tickPreview() {
-    const g = this.game;
-    const next = g.waveInProgress ? g.wave : g.wave + 1;
-    if (next > CONFIG.wavesPerRun) { this.el.wavePreview.innerHTML = ''; return; }
-
-    const p = Waves.preview(next);
-    let html = '<b>Onda ' + next + '</b> &middot; monstros nível ' + p.level;
-    if (p.boss) html += ' <span class="tag boss">CHEFE</span>';
-    html += '<br>' + (p.affixes.length
-      ? p.affixes.map(a => '<span class="tag">' + a + '</span>').join('')
-      : '<span class="tag">sem afixos</span>');
-    this.el.wavePreview.innerHTML = html;
   },
 
   tickHint() {
     const g = this.game;
     let text;
 
-    if (g.paused) text = 'Jogo pausado.';
-    else if (g.spellbook.pending) text = 'Clique no mapa para lançar ' + SPELLS[g.spellbook.pending].name + '.';
-    else if (g.screen === 'playing' && !g.waveInProgress && g.restTimer > 0)
-      text = 'Próxima onda em ' + Math.ceil(g.restTimer) + 's — chamar antes rende ouro extra.';
-    else text = 'Construa para alongar o caminho. Amarelo = dano físico, roxo = dano mágico.';
-
+    if (g.paused) {
+      text = 'Jogo pausado.';
+    } else if (g.spellbook.pending) {
+      text = 'Toque no mapa para lançar ' + SPELLS[g.spellbook.pending].name + '.';
+    } else if (g.screen === 'playing' && !g.waveInProgress && g.restTimer > 0) {
+      const next = Waves.preview(g.wave + 1);
+      text = 'Onda ' + (g.wave + 1) + ' em ' + Math.ceil(g.restTimer) + 's' +
+             (next.boss ? ' — CHEFE' : '') +
+             (next.affixes.length ? ' — ' + next.affixes.join(', ') : '');
+    } else {
+      text = 'Segure uma torre para evoluir. Amarelo = dano físico, roxo = dano mágico.';
+    }
     this.el.hint.textContent = text;
   }
 };

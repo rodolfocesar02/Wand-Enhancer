@@ -40,6 +40,7 @@ class Enemy {
     this.slowFactor = 0;
     this.slowTimer = 0;
     this.hitFlash = 0;
+    this.knock = 0;        // tranco do impacto: só deslocamento de desenho
     this.lastSchool = null;
     this.dead = false;
     this.escaped = false;
@@ -79,6 +80,9 @@ class Enemy {
 
   update(dt) {
     if (this.hitFlash > 0) this.hitFlash -= dt;
+    // O tranco nunca move o inimigo de verdade: mexer na posição empurraria
+    // ele para dentro de paredes e bagunçaria o campo de fluxo.
+    if (this.knock > 0) this.knock = Math.max(0, this.knock - dt * 7);
     this.wobble += dt * 9;
 
     if (this.slowTimer > 0) {

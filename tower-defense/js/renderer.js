@@ -32,6 +32,7 @@ const Renderer = {
     this.effects(ctx, game);
     this.floaters(ctx, game);
     this.tint(ctx, game);
+    this.strip(ctx, game);
   },
 
   /* ------------------------------------------------------------ cenario -- */
@@ -48,8 +49,8 @@ const Renderer = {
     ctx.strokeStyle = 'rgba(255,255,255,.035)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    for (let c = 1; c < CONFIG.cols; c++) { ctx.moveTo(c * t, 0); ctx.lineTo(c * t, CONFIG.height); }
-    for (let r = 1; r < CONFIG.rows; r++) { ctx.moveTo(0, r * t); ctx.lineTo(CONFIG.width, r * t); }
+    for (let c = 1; c < CONFIG.cols; c++) { ctx.moveTo(c * t, 0); ctx.lineTo(c * t, CONFIG.boardH); }
+    for (let r = 1; r < CONFIG.rows; r++) { ctx.moveTo(0, r * t); ctx.lineTo(CONFIG.boardW, r * t); }
     ctx.stroke();
 
     // Rocha do mapa: nao da para construir nem atravessar.
@@ -214,20 +215,48 @@ const Renderer = {
         ctx.restore();
       }
 
-      ctx.fillStyle = tower.fused ? '#2a1f3d' : '#1e293b';
-      ctx.fillRect(tower.c * t + 4, tower.r * t + 4, t - 8, t - 8);
-      ctx.strokeStyle = tower.def.color;
-      ctx.lineWidth = tower.fused ? 3 : 2;
-      ctx.strokeRect(tower.c * t + 4, tower.r * t + 4, t - 8, t - 8);
+      const set = SpriteSheet.get(tower.typeKey);
+      if (set) {
+        // Sprite pintado: o disco de pedra é circular, então girar a peça
+        // inteira em direção ao alvo não quebra a leitura da base.
+        const disc = t * CONFIG.spriteOverflow;
+        const size = disc / set.discRatio;
+        ctx.save();
+        ctx.translate(tower.x, tower.y);
+        // angleOffset corrige a arte que aponta para cima em vez da direita.
+        ctx.rotate(tower.angle + (set.angleOffset || 0));
+        ctx.drawImage(set.images[this.spriteFrame(tower, set)], -size / 2, -size / 2, size, size);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = tower.fused ? '#2a1f3d' : '#1e293b';
+        ctx.fillRect(tower.c * t + 5, tower.r * t + 5, t - 10, t - 10);
+        ctx.strokeStyle = tower.def.color;
+        ctx.lineWidth = tower.fused ? 3 : 2;
+        ctx.strokeRect(tower.c * t + 5, tower.r * t + 5, t - 10, t - 10);
 
-      ctx.save();
-      ctx.translate(tower.x, tower.y);
-      ctx.rotate(tower.angle);
-      this.towerHead(ctx, tower);
-      ctx.restore();
+        ctx.save();
+        ctx.translate(tower.x, tower.y);
+        ctx.rotate(tower.angle);
+        this.towerHead(ctx, tower);
+        ctx.restore();
+      }
 
       this.towerBadges(ctx, tower, t);
     }
+  },
+
+  /* O ciclo de tiro do sprite sai da recarga que a torre já controla:
+   *   0 carregada  -- recarga zerada, pronta para atirar
+   *   1 disparada  -- logo após o tiro, corda solta e sem virote
+   *   2 rearmando  -- resto da recarga, corda armada e ainda sem virote */
+  spriteFrame(tower, set) {
+    let state = 0;
+    if (tower.cooldown > 0) {
+      const total = tower.fullCooldown || tower.stats.cooldown;
+      state = (tower.cooldown / total) > 0.7 ? 1 : 2;
+    }
+    // cycle mapeia estado -> quadro, porque nem toda torre tem três desenhos.
+    return set.cycle ? set.cycle[state] : state;
   },
 
   /* Cada silhueta de torre desenha sua propria arma, ja rotacionada. */
@@ -328,8 +357,12 @@ const Renderer = {
         ctx.fill();
       }
 
+      // O tranco é só deslocamento de desenho -- a posição real nunca muda.
+      const kx = e.knock > 0 ? -Math.cos(e.angle) * e.knock * 4 : 0;
+      const ky = e.knock > 0 ? -Math.sin(e.angle) * e.knock * 4 : 0;
+
       ctx.save();
-      ctx.translate(e.x, e.y);
+      ctx.translate(e.x + kx, e.y + ky);
       ctx.rotate(e.angle);
       ctx.fillStyle = e.hitFlash > 0 ? '#ffffff' : e.color;
       this.enemyShape(ctx, e);
@@ -463,20 +496,148 @@ const Renderer = {
 
   effects(ctx, game) {
     for (const fx of game.effects) {
-      const k = fx.life / fx.max;
+      const k = Math.max(0, fx.life / fx.max);
       ctx.save();
-      ctx.globalAlpha = Math.max(0, k) * (fx.heavy ? 0.8 : 0.6);
-      ctx.strokeStyle = fx.color;
-      ctx.lineWidth = fx.heavy ? 5 : 3;
-      ctx.beginPath();
-      ctx.arc(fx.x, fx.y, fx.radius * (1.3 - k * 0.5), 0, Math.PI * 2);
-      ctx.stroke();
-      if (fx.heavy) {
-        ctx.globalAlpha = Math.max(0, k) * 0.25;
-        ctx.fillStyle = fx.color;
+
+      if (fx.kind === 'muzzle') {
+        // Cone curto na boca de tiro: diz de onde saiu o disparo mesmo quando
+        // o projétil já saiu do quadro.
+        ctx.globalAlpha = k;
+        ctx.translate(fx.x, fx.y);
+        ctx.rotate(fx.angle);
+        ctx.fillStyle = '#fff7e0';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(16 * k, -5 * k);
+        ctx.lineTo(23 * k, 0);
+        ctx.lineTo(16 * k, 5 * k);
+        ctx.closePath();
         ctx.fill();
+        ctx.globalAlpha = k * 0.7;
+        ctx.fillStyle = fx.color;
+        ctx.beginPath();
+        ctx.arc(0, 0, 6 * k, 0, Math.PI * 2);
+        ctx.fill();
+
+      } else if (fx.kind === 'spark') {
+        // Faísca no ponto de acerto, aberta contra o sentido da marcha.
+        const n = fx.big ? 7 : 4;
+        const len = fx.big ? 17 : 11;
+        ctx.globalAlpha = k;
+        ctx.strokeStyle = fx.color;
+        ctx.lineWidth = fx.big ? 2.6 : 1.8;
+        ctx.lineCap = 'round';
+        ctx.translate(fx.x, fx.y);
+        ctx.rotate(fx.angle + Math.PI);
+        ctx.beginPath();
+        for (let i = 0; i < n; i++) {
+          const a = (i / (n - 1) - 0.5) * 1.5;
+          const d = len * (1.4 - k);
+          ctx.moveTo(Math.cos(a) * 3, Math.sin(a) * 3);
+          ctx.lineTo(Math.cos(a) * d, Math.sin(a) * d);
+        }
+        ctx.stroke();
+
+      } else if (fx.kind === 'shards') {
+        // Estilhaços da morte: espalham para fora e encolhem.
+        ctx.globalAlpha = k;
+        ctx.fillStyle = fx.color;
+        ctx.translate(fx.x, fx.y);
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2 + fx.x * 0.01;
+          const d = fx.radius * (0.6 + (1 - k) * 2.1);
+          ctx.save();
+          ctx.translate(Math.cos(a) * d, Math.sin(a) * d);
+          ctx.rotate(a);
+          const sz = 3.4 * k + 1;
+          ctx.fillRect(-sz, -sz * 0.45, sz * 2, sz * 0.9);
+          ctx.restore();
+        }
+
+      } else {
+        ctx.globalAlpha = k * (fx.heavy ? 0.8 : 0.6);
+        ctx.strokeStyle = fx.color;
+        ctx.lineWidth = fx.heavy ? 5 : 3;
+        ctx.beginPath();
+        ctx.arc(fx.x, fx.y, fx.radius * (1.3 - k * 0.5), 0, Math.PI * 2);
+        ctx.stroke();
+        if (fx.heavy) {
+          ctx.globalAlpha = k * 0.25;
+          ctx.fillStyle = fx.color;
+          ctx.fill();
+        }
       }
       ctx.restore();
+    }
+  },
+
+  /* ------------------------------------------ faixa de magias no canvas -- */
+
+  roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  },
+
+  strip(ctx, game) {
+    const y0 = CONFIG.boardH;
+    ctx.fillStyle = '#0b1020';
+    ctx.fillRect(0, y0, CONFIG.boardW, CONFIG.strip);
+    ctx.strokeStyle = 'rgba(255,255,255,.07)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, y0 + 0.5);
+    ctx.lineTo(CONFIG.boardW, y0 + 0.5);
+    ctx.stroke();
+
+    for (const b of game.stripLayout()) {
+      const sl = b.slot;
+      const ready = sl.cd <= 0;
+      const armed = game.spellbook.pending === sl.key;
+
+      ctx.fillStyle = armed ? '#223054' : '#1b2540';
+      this.roundRect(ctx, b.x, b.y, b.w, b.h, 11);
+      ctx.fill();
+
+      // Recarga subindo de baixo para cima, como uma ampulheta.
+      if (!ready) {
+        ctx.save();
+        this.roundRect(ctx, b.x, b.y, b.w, b.h, 11);
+        ctx.clip();
+        const k = sl.cd / sl.maxCd;
+        ctx.fillStyle = 'rgba(8,12,24,.74)';
+        ctx.fillRect(b.x, b.y + b.h * (1 - k), b.w, b.h * k);
+        ctx.restore();
+      }
+
+      ctx.strokeStyle = armed ? '#e6ecff' : ready ? sl.def.color : '#2b3859';
+      ctx.lineWidth = armed ? 2.5 : 1.5;
+      this.roundRect(ctx, b.x, b.y, b.w, b.h, 11);
+      ctx.stroke();
+
+      ctx.fillStyle = ready ? sl.def.color : '#3b4560';
+      this.roundRect(ctx, b.x + 10, b.y + 11, 22, 22, 6);
+      ctx.fill();
+      ctx.fillStyle = '#0b1020';
+      ctx.font = '700 13px ui-monospace, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(sl.def.hotkey, b.x + 21, b.y + 22);
+
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = ready ? '#e6ecff' : '#6b7a9c';
+      ctx.font = '700 14px system-ui, sans-serif';
+      ctx.fillText(sl.def.name, b.x + 40, b.y + 24);
+
+      ctx.fillStyle = ready ? '#8fa0c7' : sl.def.color;
+      ctx.font = '600 11.5px system-ui, sans-serif';
+      ctx.fillText(ready ? (sl.def.targeted ? 'toque no mapa' : 'pronta')
+                         : Math.ceil(sl.cd) + 's', b.x + 40, b.y + 41);
     }
   },
 

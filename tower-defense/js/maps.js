@@ -1,16 +1,18 @@
 'use strict';
 
-/* Mapas. Cada um define entrada, saida e paredes de terreno (celulas onde
- * nao da para construir nem andar). Mudar entrada/saida muda completamente
- * a estrategia de labirinto, entao isto e conteudo real e nao enfeite. */
+/* Mapas para o tabuleiro 14x9.
+ *
+ * Cada um define entrada, saída e paredes de terreno (células onde não dá
+ * para construir nem andar). Mudar entrada e saída muda toda a estratégia de
+ * labirinto, então isto é conteúdo, não enfeite. */
 
 const MAPS = [
   {
     id: 'planicie',
     name: 'Planície',
     desc: 'Campo aberto de ponta a ponta. Labirinto livre.',
-    spawn: { c: 0, r: 6 },
-    exit: { c: 19, r: 6 },
+    spawn: { c: 0, r: 4 },
+    exit: { c: 13, r: 4 },
     walls: []
   },
   {
@@ -18,12 +20,12 @@ const MAPS = [
     name: 'Desfiladeiro',
     desc: 'Duas gargantas de rocha estreitam o meio do mapa.',
     spawn: { c: 0, r: 1 },
-    exit: { c: 19, r: 10 },
+    exit: { c: 13, r: 7 },
     walls: [
-      [6, 0], [6, 1], [6, 2], [6, 3],
-      [6, 8], [6, 9], [6, 10], [6, 11],
-      [13, 0], [13, 1], [13, 2], [13, 3],
-      [13, 8], [13, 9], [13, 10], [13, 11]
+      [4, 0], [4, 1], [4, 2],
+      [4, 6], [4, 7], [4, 8],
+      [9, 0], [9, 1], [9, 2],
+      [9, 6], [9, 7], [9, 8]
     ]
   },
   {
@@ -31,14 +33,13 @@ const MAPS = [
     name: 'Ruínas',
     desc: 'Pilares espalhados quebram qualquer corredor reto.',
     spawn: { c: 0, r: 0 },
-    exit: { c: 19, r: 11 },
+    exit: { c: 13, r: 8 },
     walls: [
-      [3, 3], [4, 3], [3, 4],
-      [8, 1], [9, 1], [9, 2],
-      [8, 9], [9, 9], [9, 10],
-      [14, 4], [15, 4], [15, 5],
-      [5, 7], [6, 7], [16, 8], [16, 9],
-      [11, 5], [11, 6]
+      [3, 2], [3, 3],
+      [6, 1], [7, 1],
+      [6, 6], [6, 7],
+      [10, 3], [10, 4],
+      [4, 6], [9, 5], [11, 7]
     ]
   }
 ];

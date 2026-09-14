@@ -38,6 +38,7 @@ class Tower {
     this.level = 0;
     this.path = [];              // chaves dos ramos escolhidos
     this.cooldown = 0;
+    this.fullCooldown = 1;
     this.angle = -Math.PI / 2;
     this.recoil = 0;
     this.invested = this.def.cost;
@@ -138,7 +139,7 @@ class Tower {
     return best;
   }
 
-  update(dt, enemies, projectiles, rateBonus, mods) {
+  update(dt, enemies, projectiles, rateBonus, mods, game) {
     if (this.cooldown > 0) this.cooldown -= dt;
     if (this.recoil > 0) this.recoil -= dt * 5;
 
@@ -150,15 +151,14 @@ class Tower {
     if (this.cooldown > 0) return;
 
     this.cooldown = this.stats.cooldown / (1 + (rateBonus || 0));
+    this.fullCooldown = this.cooldown;   // o sprite lê a recarga para escolher o quadro
     this.recoil = 1;
-    const muzzle = 15;
-    projectiles.push(new Projectile(
-      this.x + Math.cos(this.angle) * muzzle,
-      this.y + Math.sin(this.angle) * muzzle,
-      target,
-      this.stats,
-      this.def.color,
-      mods
-    ));
+
+    const reach = CONFIG.tile * 0.34;
+    const mx = this.x + Math.cos(this.angle) * reach;
+    const my = this.y + Math.sin(this.angle) * reach;
+    if (game) game.muzzle(mx, my, this.angle, this.def.color);
+
+    projectiles.push(new Projectile(mx, my, target, this.stats, this.def.color, mods));
   }
 }

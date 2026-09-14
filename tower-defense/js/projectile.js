@@ -66,8 +66,8 @@ class Projectile {
     this.y += this.dirY * step;
     this.travelled += step;
 
-    if (this.x < -20 || this.y < -20 || this.x > CONFIG.width + 20 ||
-        this.y > CONFIG.height + 20 || this.travelled > 900) {
+    if (this.x < -20 || this.y < -20 || this.x > CONFIG.boardW + 20 ||
+        this.y > CONFIG.boardH + 20 || this.travelled > 900) {
       this.done = true;
       return;
     }

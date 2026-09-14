@@ -44,6 +44,7 @@ class Game {
     this.hoverCell = null;
     this.selectedType = null;
     this.selectedTower = null;
+    this.menuTower = null;   // torre com o menu de ações aberto (toque longo)
     this.buildCache = new Map();
 
     this.rateBonus = 0;
@@ -87,6 +88,31 @@ class Game {
   toMenu() {
     this.screen = 'menu';
     this.emit();
+  }
+
+  /* A faixa de magias vive dentro do canvas, abaixo do tabuleiro: fica a um
+   * toque de distância sem roubar área de jogo e sem depender de rolagem. */
+  stripLayout() {
+    const slots = this.spellbook.slots;
+    const n = slots.length || 1;
+    const pad = 9;
+    const w = (CONFIG.boardW - pad * (n + 1)) / n;
+    return slots.map((slot, i) => ({
+      slot: slot,
+      x: pad + i * (w + pad),
+      y: CONFIG.boardH + pad,
+      w: w,
+      h: CONFIG.strip - pad * 2
+    }));
+  }
+
+  /* Devolve a magia sob o ponto, ou null se o ponto não está na faixa. */
+  hitStrip(x, y) {
+    if (y < CONFIG.boardH) return null;
+    for (const b of this.stripLayout()) {
+      if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return b.slot.key;
+    }
+    return null;
   }
 
   get speed() { return CONFIG.speeds[this.speedIndex]; }
@@ -166,6 +192,7 @@ class Game {
     this.gold += refund;
     this.removeTower(t);
     this.selectedTower = null;
+    this.menuTower = null;
     this.notifyCell('+' + refund, t.c, t.r, '#4ade80');
     this.emit();
   }
@@ -299,7 +326,7 @@ class Game {
     }
 
     for (const tower of this.towers) {
-      tower.update(dt, this.enemies, this.projectiles, this.rateBonus, this.damageMods);
+      tower.update(dt, this.enemies, this.projectiles, this.rateBonus, this.damageMods, this);
     }
 
     const onHit = (enemy, dealt, packet) => this.onDamage(enemy, dealt, packet);
@@ -325,7 +352,9 @@ class Game {
         this.score += e.gold;
         this.kills += 1;
         this.notify('+' + e.gold, e.x, e.y - 8, '#fbbf24');
-        this.effects.push({ x: e.x, y: e.y, radius: e.radius + 6, life: 0.2, max: 0.2, color: e.color });
+        this.effects.push({ x: e.x, y: e.y, radius: e.radius + 6, life: 0.22, max: 0.22, color: e.color });
+        this.effects.push({ kind: 'shards', x: e.x, y: e.y, radius: e.radius,
+                            life: 0.34, max: 0.34, color: e.color });
         continue;
       }
       if (e.escaped) continue;
@@ -365,10 +394,31 @@ class Game {
   /* Numeros de dano sao limitados de proposito: mostrar todo acerto vira
    * poluicao visual e esconde a informacao que importa. */
   onDamage(enemy, dealt, packet) {
-    if (dealt < 1 || this.floaters.length > 26) return;
+    if (dealt < 1) return;
+
+    // A sensação de acerto vem de movimento, não de detalhe de sprite: por
+    // isso faísca e tranco valem em qualquer escala, inclusive a 26px.
+    const school = Damage.dominant(packet);
+    enemy.knock = 1;
+    if (this.effects.length < 90) {
+      this.effects.push({
+        kind: 'spark', x: enemy.x, y: enemy.y, angle: enemy.angle,
+        life: 0.18, max: 0.18, color: DAMAGE_META[school].color,
+        big: dealt > 60
+      });
+    }
+
+    if (this.floaters.length > 26) return;
     if (dealt < 18 && Math.random() > 0.25) return;
     this.notify(Math.round(dealt), enemy.x, enemy.y - enemy.radius - 4,
-                DAMAGE_META[Damage.dominant(packet)].color);
+                DAMAGE_META[school].color);
+  }
+
+  /* Clarão na boca de tiro, disparado pela torre no instante do tiro. */
+  muzzle(x, y, angle, color) {
+    if (this.effects.length > 90) return;
+    this.effects.push({ kind: 'muzzle', x: x, y: y, angle: angle,
+                        life: 0.09, max: 0.09, color: color });
   }
 
   decayFloaters(dt) {
@@ -415,9 +465,29 @@ class Game {
     this.emit();
   }
 
+  /* Toque longo numa torre abre o menu de ações (evoluir, fundir, vender).
+   * Um toque curto apenas seleciona e mostra o alcance. */
+  openMenu(c, r) {
+    const tower = this.towerAt.get(this.key(c, r));
+    if (!tower) return false;
+    this.menuTower = tower;
+    this.selectedTower = tower;
+    this.selectedType = null;
+    this.spellbook.pending = null;
+    this.emit();
+    return true;
+  }
+
+  closeMenu() {
+    if (!this.menuTower) return;
+    this.menuTower = null;
+    this.emit();
+  }
+
   clearSelection() {
     this.selectedType = null;
     this.selectedTower = null;
+    this.menuTower = null;
     this.spellbook.pending = null;
     this.emit();
   }
