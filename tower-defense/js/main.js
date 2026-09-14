@@ -1,16 +1,18 @@
 'use strict';
 
-/* Bootstrap: entrada, loop de animacao e ligacao entre os modulos. */
+/* Bootstrap: entrada, loop de animação e ligação entre os módulos. */
 
 (function () {
   const canvas = document.getElementById('canvas');
+
+  Meta.load();
   const game = new Game();
 
   Renderer.init(canvas);
   UI.init(game);
 
-  /* O canvas e redimensionado por CSS, entao convertemos do espaco da tela
-   * para o espaco logico do tabuleiro antes de descobrir a celula. */
+  /* O canvas é redimensionado por CSS, então convertemos do espaço da tela
+   * para o espaço lógico do tabuleiro antes de descobrir a célula. */
   function cellFromEvent(ev) {
     const rect = canvas.getBoundingClientRect();
     const x = (ev.clientX - rect.left) * (CONFIG.width / rect.width);
@@ -41,12 +43,20 @@
     if (cell) { game.hoverCell = cell; game.clickCell(cell.c, cell.r); }
   }, { passive: false });
 
-  const shortcuts = Object.keys(TOWER_TYPES);
   window.addEventListener('keydown', ev => {
+    if (game.screen === 'menu') return;
     if (ev.target instanceof HTMLInputElement) return;
 
     const n = parseInt(ev.key, 10);
-    if (n >= 1 && n <= shortcuts.length) { game.selectType(shortcuts[n - 1]); return; }
+    if (n >= 1 && n <= game.unlockedTowers.length) {
+      game.selectType(game.unlockedTowers[n - 1]);
+      return;
+    }
+
+    const upper = ev.key.toUpperCase();
+    for (const slot of game.spellbook.slots) {
+      if (slot.def.hotkey === upper) { game.triggerSpell(slot.key); return; }
+    }
 
     switch (ev.key.toLowerCase()) {
       case 'n': game.callWave(true); break;
@@ -59,14 +69,17 @@
   let last = performance.now();
 
   function frame(now) {
-    // Trava o passo em 50ms para que uma aba em segundo plano nao teleporte inimigos.
-    const raw = Math.min((now - last) / 1000, 0.05);
+    // Trava o passo em 50ms para que uma aba em segundo plano não teleporte
+    // inimigos quando o navegador volta a desenhar.
+    const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
 
-    for (let i = 0; i < game.speed; i++) game.update(raw);
-    Renderer.draw(game);
-    UI.render();
+    for (let i = 0; i < game.speed; i++) game.update(dt);
 
+    if (game.screen !== 'menu') {
+      Renderer.draw(game);
+      UI.tick();
+    }
     requestAnimationFrame(frame);
   }
 

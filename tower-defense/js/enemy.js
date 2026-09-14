@@ -1,41 +1,57 @@
 'use strict';
 
-/* Inimigo que segue o campo de fluxo do grid, celula a celula. */
+/* Inimigo: silhueta base + afixo + nivel.
+ *
+ * As 5 silhuetas sao reaproveitadas; o que muda entre variantes e o afixo,
+ * que altera cor E marcador de forma (placas, halo, rastro). Cor sozinha nao
+ * comunica resistencia rapido o bastante numa onda cheia e falha para quem
+ * tem daltonismo -- por isso o marcador nao e opcional. */
 
 class Enemy {
-  constructor(typeKey, hpMultiplier, grid, tile) {
+  constructor(typeKey, affixKey, level, grid, tile) {
     const def = ENEMY_TYPES[typeKey];
+    const affix = AFFIXES[affixKey] || AFFIXES.comum;
+
     this.type = typeKey;
     this.def = def;
+    this.affixKey = affixKey || 'comum';
+    this.affix = affix;
+    this.level = level || 1;
     this.grid = grid;
     this.tile = tile;
 
-    this.maxHp = Math.round(def.hp * hpMultiplier);
+    // Nivel do monstro escala vida e recompensa, nao velocidade.
+    const levelMul = Math.pow(1.145, this.level - 1);
+
+    this.maxHp = Math.round(def.hp * levelMul * affix.hpMul);
     this.hp = this.maxHp;
-    this.baseSpeed = def.speed;
-    this.radius = def.radius;
-    this.gold = def.gold;
+    this.baseSpeed = def.speed * affix.speedMul;
+    this.radius = def.radius + (this.level > 8 ? 2 : 0);
+    this.gold = Math.max(1, Math.round(def.gold * affix.goldMul * (1 + (this.level - 1) * 0.06)));
     this.leak = def.leak;
+    this.resist = { fisico: affix.resist.fisico, magico: affix.resist.magico };
+    this.color = affix.color || def.color || '#e2e8f0';
+    this.marker = affix.marker;
+    this.shape = def.shape;
 
     this.x = (grid.spawn.c + 0.5) * tile;
     this.y = (grid.spawn.r + 0.5) * tile;
 
-    this.slowFactor = 0;     // 0 = sem lentidao, 0.5 = metade da velocidade
+    this.slowFactor = 0;
     this.slowTimer = 0;
     this.hitFlash = 0;
+    this.lastSchool = null;
     this.dead = false;
     this.escaped = false;
     this.angle = 0;
+    this.wobble = Math.random() * Math.PI * 2;
   }
 
   get cell() {
-    return {
-      c: Math.floor(this.x / this.tile),
-      r: Math.floor(this.y / this.tile)
-    };
+    return { c: Math.floor(this.x / this.tile), r: Math.floor(this.y / this.tile) };
   }
 
-  /* Quanto falta ate a saida. Menor = mais adiantado; usado para mirar no "primeiro". */
+  /* Quanto falta ate a saida. Menor = mais adiantado. */
   progress() {
     const cell = this.cell;
     const d = this.grid.distanceAt(cell.c, cell.r);
@@ -45,21 +61,25 @@ class Enemy {
   applySlow(factor, duration) {
     // Lentidao nao acumula: vale sempre o efeito mais forte ainda ativo.
     if (factor >= this.slowFactor) {
-      this.slowFactor = factor;
+      this.slowFactor = Math.min(0.95, factor);
       this.slowTimer = duration;
     } else {
       this.slowTimer = Math.max(this.slowTimer, duration * 0.5);
     }
   }
 
-  damage(amount) {
-    this.hp -= amount;
+  takeHit(packet, mods) {
+    const dealt = Damage.resolve(this, packet, mods);
+    this.hp -= dealt;
     this.hitFlash = 0.12;
+    this.lastSchool = Damage.dominant(packet);
     if (this.hp <= 0) this.dead = true;
+    return dealt;
   }
 
   update(dt) {
     if (this.hitFlash > 0) this.hitFlash -= dt;
+    this.wobble += dt * 9;
 
     if (this.slowTimer > 0) {
       this.slowTimer -= dt;
@@ -68,14 +88,13 @@ class Enemy {
 
     const cell = this.cell;
 
-    // Chegou na saida: vaza e tira vidas.
     if (cell.c === this.grid.exit.c && cell.r === this.grid.exit.r) {
       this.escaped = true;
       return;
     }
 
     const next = this.grid.nextCell(cell.c, cell.r);
-    if (!next) return; // sem rota (nao deveria acontecer: tryBlock impede)
+    if (!next) return; // sem rota: so acontece se a Muralha expirar num quadro ruim
 
     const targetX = (next.c + 0.5) * this.tile;
     const targetY = (next.r + 0.5) * this.tile;

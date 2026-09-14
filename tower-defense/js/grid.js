@@ -2,25 +2,34 @@
 
 /* Grid com campo de fluxo.
  *
- * Nao existe caminho fixo: um BFS a partir da saida gera, para cada celula livre,
- * a distancia ate a saida e a direcao do proximo passo. As torres sao obstaculos,
- * entao construir remodela o percurso de todos os inimigos de uma vez.
- * O BFS tambem e o arbitro de "essa torre pode ser construida aqui?": se apos
- * bloquear a celula o spawn (ou algum inimigo vivo) perde acesso a saida, a
- * construcao e desfeita.
- */
+ * Nao existe caminho fixo: um BFS a partir da saida gera, para cada celula
+ * livre, a distancia ate a saida e a direcao do proximo passo. Torres, paredes
+ * de terreno e a magia Muralha sao obstaculos, entao qualquer uma delas
+ * remodela a rota de todos os inimigos de uma vez.
+ *
+ * O mesmo BFS e o arbitro do que pode ser construido: se bloquear a celula
+ * deixaria a entrada (ou algum inimigo vivo) sem rota ate a saida, a
+ * construcao e desfeita. */
 
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
+const CELL = { LIVRE: 0, TORRE: 1, TERRENO: 2, MURALHA: 3 };
+
 class Grid {
-  constructor(cols, rows, spawn, exit) {
-    this.cols = cols;
-    this.rows = rows;
-    this.spawn = spawn;
-    this.exit = exit;
-    this.blocked = new Uint8Array(cols * rows);
-    this.dist = new Int32Array(cols * rows);
-    this.flow = new Int8Array(cols * rows);
+  constructor(map) {
+    this.cols = CONFIG.cols;
+    this.rows = CONFIG.rows;
+    this.spawn = map.spawn;
+    this.exit = map.exit;
+    this.cells = new Uint8Array(this.cols * this.rows);
+    this.dist = new Int32Array(this.cols * this.rows);
+    this.flow = new Int8Array(this.cols * this.rows);
+
+    for (const w of map.walls) {
+      if (this.inBounds(w[0], w[1]) && !this.isReserved(w[0], w[1])) {
+        this.cells[this.idx(w[0], w[1])] = CELL.TERRENO;
+      }
+    }
     this.compute();
   }
 
@@ -28,7 +37,9 @@ class Grid {
 
   inBounds(c, r) { return c >= 0 && c < this.cols && r >= 0 && r < this.rows; }
 
-  isBlocked(c, r) { return !this.inBounds(c, r) || this.blocked[this.idx(c, r)] === 1; }
+  cellAt(c, r) { return this.inBounds(c, r) ? this.cells[this.idx(c, r)] : CELL.TERRENO; }
+
+  isBlocked(c, r) { return this.cellAt(c, r) !== CELL.LIVRE; }
 
   isReserved(c, r) {
     return (c === this.spawn.c && r === this.spawn.r) || (c === this.exit.c && r === this.exit.r);
@@ -58,7 +69,7 @@ class Grid {
         if (!this.inBounds(nc, nr)) continue;
 
         const ni = this.idx(nc, nr);
-        if (this.blocked[ni] === 1 || this.dist[ni] !== -1) continue;
+        if (this.cells[ni] !== CELL.LIVRE || this.dist[ni] !== -1) continue;
 
         this.dist[ni] = next;
         // A vizinha caminha na direcao oposta a que usamos para chegar nela.
@@ -70,7 +81,6 @@ class Grid {
     return this.dist[this.idx(this.spawn.c, this.spawn.r)] !== -1;
   }
 
-  /* Celula seguinte no caminho, ou null se a atual for a saida/inalcancavel. */
   nextCell(c, r) {
     if (!this.inBounds(c, r)) return null;
     const d = this.flow[this.idx(c, r)];
@@ -83,15 +93,15 @@ class Grid {
     return this.dist[this.idx(c, r)];
   }
 
-  /* Tenta bloquear a celula. Reverte e devolve false se selar o labirinto.
-   * occupied: celulas {c,r} que precisam continuar com rota (inimigos vivos). */
-  tryBlock(c, r, occupied) {
+  /* Tenta ocupar a celula com o tipo dado. Reverte e devolve false se selar
+   * o labirinto. occupied: celulas que precisam continuar com rota. */
+  tryBlock(c, r, kind, occupied) {
     if (!this.inBounds(c, r) || this.isReserved(c, r)) return false;
 
     const i = this.idx(c, r);
-    if (this.blocked[i] === 1) return false;
+    if (this.cells[i] !== CELL.LIVRE) return false;
 
-    this.blocked[i] = 1;
+    this.cells[i] = kind;
     let ok = this.compute();
 
     if (ok && occupied) {
@@ -101,7 +111,7 @@ class Grid {
     }
 
     if (!ok) {
-      this.blocked[i] = 0;
+      this.cells[i] = CELL.LIVRE;
       this.compute();
       return false;
     }
@@ -110,8 +120,8 @@ class Grid {
 
   unblock(c, r) {
     const i = this.idx(c, r);
-    if (this.blocked[i] === 0) return;
-    this.blocked[i] = 0;
+    if (this.cells[i] === CELL.LIVRE || this.cells[i] === CELL.TERRENO) return;
+    this.cells[i] = CELL.LIVRE;
     this.compute();
   }
 

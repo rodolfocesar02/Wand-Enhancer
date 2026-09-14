@@ -3,7 +3,7 @@
 Um tower defense jogável em **HTML5 Canvas + JavaScript puro**. Sem dependências,
 sem build, sem servidor: abra o `index.html` no navegador e jogue.
 
-![Tower Defense em andamento: labirinto de torres desviando os inimigos](docs/preview.png)
+![Partida em andamento: labirinto de torres, inimigos com afixos e barra de magias](docs/preview.png)
 
 ![feito com](https://img.shields.io/badge/stack-Canvas%202D%20%2B%20JS-4ade80)
 ![dependências](https://img.shields.io/badge/depend%C3%AAncias-nenhuma-38bdf8)
@@ -13,89 +13,198 @@ sem build, sem servidor: abra o `index.html` no navegador e jogue.
 
 1. Baixe ou clone o repositório.
 2. Abra `index.html` (duplo clique já funciona — os scripts são clássicos, não módulos ES).
-3. Clique em **Começar**.
+3. Compre o que der no menu, escolha o mapa e inicie a expedição.
 
 Prefere servir por HTTP? `npx serve .` ou `python3 -m http.server` também funcionam.
 
-## A mecânica central
+## A mecânica central: o caminho não é fixo
 
-Não existe caminho fixo no mapa. Um **campo de fluxo** (BFS a partir da saída)
-calcula, para cada célula livre, a distância até a saída e a direção do próximo
-passo. Cada torre construída é um obstáculo, então **construir remodela a rota de
-todos os inimigos de uma vez**.
+Um **campo de fluxo** (BFS a partir da saída) calcula, para cada célula livre, a
+distância até a saída e a direção do próximo passo. Cada torre é um obstáculo,
+então **construir remodela a rota de todos os inimigos de uma vez**.
 
-O objetivo real do jogo é esse: montar um labirinto que alongue o percurso ao
-máximo, dando mais tempo de tiro às suas torres. O mesmo BFS é o árbitro do que
-pode ser construído — se bloquear a célula deixaria a entrada (ou algum inimigo
-vivo) sem rota até a saída, a construção é recusada e desfeita.
+O jogo é sobre montar o labirinto mais longo possível. O mesmo BFS é o árbitro do
+que pode ser construído: se bloquear a célula deixaria a entrada — ou algum
+inimigo já em campo — sem rota até a saída, a construção é recusada e desfeita.
 
-As torres também usam o mapa de distâncias para mirar: o alvo escolhido é sempre
-o inimigo **mais adiantado** dentro do alcance, ou seja, o que está mais perto de vazar.
+As torres também usam o mapa de distâncias para mirar: o alvo é sempre o inimigo
+**mais adiantado** dentro do alcance, ou seja, o que está mais perto de vazar.
 
-## Torres
+## Duas escolas de dano
 
-| Torre | Custo | Perfil |
-|---|---|---|
-| Arqueira | 50 | Tiro rápido, alvo único. O carro-chefe de dano sustentado. |
-| Canhão | 95 | Dano em área, recarga lenta. Resolve aglomerados. |
-| Gelo | 70 | Dano baixo, mas reduz a velocidade. Multiplica o DPS das vizinhas. |
+Todo dano é **físico** (amarelo) ou **mágico** (roxo), e cada inimigo tem
+resistência separada para cada um. Resistência é redução percentual e **nunca
+chega a 100%** — a torre errada sempre faz alguma coisa, só faz pouco.
 
-Cada torre tem 3 níveis. Vender devolve 70% do total investido.
+É isso que faz a variedade de torres importar: contra um Blindado (62% de
+resistência física), 100 de dano físico viram 38, enquanto 100 de dano mágico
+passam inteiros.
 
-## Inimigos e ondas
+## As 6 torres
 
-| Inimigo | Perfil |
+O eixo de design é explícito: **quanto mais curto o alcance, maior o DPS bruto.**
+
+| Torre | Custo | Escola | Alcance / DPS | Papel |
+|---|---|---|---|---|
+| Bombarda | 100 | Físico | 92 / 32 | Dano em área. Resolve aglomerados. |
+| Vórtice Glacial | 70 | Mágico | 96 / 10 | Lentidão forte. Ver nota abaixo. |
+| Templo Rúnico | 120 | Híbrido | 120 / 27 | Metade físico, metade mágico. |
+| Altar Arcano | 85 | Mágico | 128 / 24 | Dano constante que ignora armadura. |
+| Arqueira | 50 | Físico | 135 / 22 | Tiro rápido, o carro-chefe. |
+| Balista | 145 | Físico | 200 / 20 | Perfura a fila inteira. |
+
+O Glacial é a única exceção à regra, e é deliberada: ele não paga em dano, paga
+em lentidão. Medir o Glacial pelo DPS dele é medir a coisa errada — o valor dele
+é o DPS que ele **adiciona às vizinhas**.
+
+## Evolução ramificada
+
+Cada torre tem 3 níveis, e nos níveis 2 e 3 o jogador escolhe entre **dois
+caminhos exclusivos**. São 4 estados finais distintos por torre, 24 no total.
+
+O eixo da escolha muda conforme a torre:
+
+- **Arqueira** — alcance *ou* dano
+- **Balista** — perfuração *ou* dano
+- **Bombarda** — raio da área *ou* dano no centro
+- **Altar** — cadência *ou* dano
+- **Glacial** — intensidade da lentidão *ou* dano
+- **Templo Rúnico** — subir o lado **físico** *ou* o lado **mágico**
+
+O Templo é a torre da decisão: o Voto de Aço sobe o físico e derruba o mágico, o
+Voto de Runa faz o inverso. Manter o equilíbrio nunca é a opção mais forte contra
+um alvo específico, mas é a única que não afunda contra o afixo errado.
+
+## Fusão
+
+Duas torres **nível 3 adjacentes** com receita válida viram uma torre nova. A
+fundida ocupa a célula da selecionada e **libera a outra** — o labirinto muda
+junto, então fundir também é uma decisão de terreno.
+
+| Receita | Resultado |
 |---|---|
-| Grunt | Equilibrado, o volume da onda. |
-| Veloz | Pouca vida, quase o dobro da velocidade. |
-| Tanque | Muita vida, lento, custa 2 vidas se vazar. |
-| Chefe | A cada 10 ondas. Custa 6 vidas. |
+| Arqueira + Altar | **Arqueira Rúnica** — flechas híbridas em cadência alta |
+| Balista + Bombarda | **Morteiro Pesado** — área enorme com alcance de cerco |
+| Altar + Glacial | **Prisma Congelante** — magia em área que congela o grupo |
+| Bombarda + Templo | **Forja de Guerra** — explosão híbrida |
+| Altar + Balista | **Lança Etérea** — perfura a fila com dano mágico puro |
+| Arqueira + Glacial | **Caçadora de Gelo** — tiro rápido que mantém tudo lento |
 
-As ondas são infinitas e a vida escala em `1,155^(onda-1)` — o jogo não termina em
-vitória, ele aperta até você perder. A pontuação é o quanto você aguentou.
+**A regra de balanceamento é medida, não chutada:** o DPS da fundida fica entre
+**80% e 92% da soma** das duas torres nível 3 que ela consome. Acima disso,
+fundir vira obrigatório e as 6 torres viram decoração. Abaixo, fundir vira
+armadilha e a mecânica inteira é código morto — que foi exatamente o bug que a
+primeira versão tinha (as 6 receitas entregavam de 33% a 69%).
 
-Chamar a próxima onda antes do fim do intervalo rende ouro extra proporcional ao
-tempo que sobrou: o risco calculado é a principal alavanca de economia.
+A troca real: o jogador perde um pouco de dano bruto e ganha cobertura contra os
+dois tipos de resistência, uma célula livre e mais alcance ou área. Em
+compensação, concentra o investimento numa célula só, que cobre uma faixa do mapa
+em vez de duas.
+
+## Inimigos: 5 silhuetas, 5 afixos
+
+As silhuetas são reaproveitadas entre todas as variantes. O que muda é o **afixo**,
+que altera cor **e marcador de forma**:
+
+| Afixo | Marcador | Efeito |
+|---|---|---|
+| Blindado | placas amarelas | 62% de resistência física. Mais lento. |
+| Encantado | halo roxo pontilhado | 62% de resistência mágica. Mais lento. |
+| Rúnico | placas **e** halo | 38% nos dois. Bem mais lento e com menos vida. |
+| Ágil | rastro | Sem resistência (recebe 15% a mais). Muito mais rápido e frágil. |
+
+O marcador não é enfeite. Resistência é a informação mais urgente da tela e o
+jogador tem menos de um segundo para decidir se aquele grupo pede torre física ou
+mágica — matiz sozinho falha no meio de uma onda cheia e falha para quem tem
+daltonismo.
+
+Os afixos entram escalonados, cada um como uma lição isolada antes de aparecer
+misturado: **Ágil na onda 4**, **Blindado na 6**, **Encantado na 9**, **Rúnico na 14**.
+
+## Magias
+
+Habilidades ativas com recarga própria, utilizáveis no meio da onda.
+
+| Magia | Tecla | Recarga | Efeito |
+|---|---|---|---|
+| Meteoro | `Q` | 26s | Dano mágico pesado numa área do mapa. |
+| Congelar | `W` | 42s | Congela todos os inimigos em campo. |
+| Fúria | `E` | 36s | Todas as torres atiram 70% mais rápido por 9s. |
+| Muralha | `R` | 30s | Bloqueia uma célula por 11s e força o desvio. |
+
+Muralha é a mais interessante das quatro porque conversa com a mecânica central:
+ela reescreve a rota sem custar ouro. Usa a mesma validação das torres — se
+selaria o mapa, a magia não é gasta.
+
+## Expedições e meta-progressão
+
+Uma expedição tem **25 ondas**. Terminando ou perdendo, o XP acumulado vai para o
+menu e compra desbloqueios permanentes: torres, magias, a Arte da Fusão, mapas
+novos e melhorias graduais do Reino (ouro inicial, vidas, dano físico, dano
+mágico, recarga de magias).
+
+**Perder também rende XP** — de propósito. Senão o jogador trava sem conseguir
+comprar justamente o que precisa para passar da parede em que morreu.
+
+Curva medida por simulação (bot que constrói no caminho, evolui e funde):
+
+| Estado | Resultado |
+|---|---|
+| Expedição 1, só o inicial | morre na onda 22 de 25 |
+| 4 desbloqueios | vence com 15 de 20 vidas |
+| Tudo desbloqueado | vence com 36 vidas, 12 torres fundidas |
+
+Comprar tudo custa 3457 XP e uma expedição rende de 500 a 790 — cerca de **6
+expedições** para o arco completo.
+
+![Menu de meta-progressão](docs/menu.png)
 
 ## Atalhos
 
 | Tecla | Ação |
 |---|---|
-| `1` `2` `3` | Escolher torre |
+| `1` … `6` | Escolher torre (na ordem da loja) |
+| `Q` `W` `E` `R` | Lançar magia |
 | `N` | Chamar a próxima onda |
 | `Espaço` | Pausar / retomar |
-| `Esc` | Cancelar seleção |
-| Botão direito | Cancelar seleção |
+| `Esc` / botão direito | Cancelar seleção |
 
-Há também controle de velocidade (1x / 2x / 3x) na barra lateral.
+Chamar a onda antes do fim do intervalo rende ouro extra proporcional ao tempo
+que sobrou. Há também controle de velocidade (1x / 2x / 3x).
 
 ## Estrutura
 
 ```
-index.html          marcação e ordem de carga dos scripts
-css/style.css       tema, HUD e barra lateral
-js/config.js        constantes de mundo e balanceamento
+index.html          duas telas (menu e partida) e ordem de carga dos scripts
+css/style.css       tema, HUD, loja, inspetor e menu
+js/config.js        constantes, torres, fusões, inimigos, afixos e magias
+js/maps.js          os 3 mapas
+js/meta.js          XP, desbloqueios e persistência em localStorage
 js/grid.js          grid, BFS e campo de fluxo
-js/enemy.js         inimigos
-js/tower.js         torres, mira e upgrades
-js/projectile.js    projéteis, dano direto e em área
-js/waves.js         gerador de ondas infinitas
+js/damage.js        resolução de dano físico e mágico
+js/enemy.js         inimigos, afixos e níveis
+js/tower.js         torres, mira, evolução ramificada e fusão
+js/projectile.js    projéteis: direto, em área e perfurante
+js/waves.js         as 25 ondas da expedição
+js/spells.js        magias ativas e recargas
 js/renderer.js      desenho em Canvas 2D
 js/ui.js            ponte entre estado e DOM
 js/game.js          estado e regras
 js/main.js          entrada, loop e atalhos
-docs/preview.png    captura usada no README
+docs/               capturas usadas neste README
 ```
 
 A separação é deliberada: `game.js` não toca no DOM e `renderer.js` não altera
-estado. Dá para rodar a simulação inteira sem tela — foi assim que o
-balanceamento acima foi medido.
+estado. Dá para rodar a expedição inteira sem tela — foi assim que todo o
+balanceamento deste README foi medido, e é assim que os bugs de fusão e da curva
+de alcance×DPS foram encontrados.
 
 ## Ajustando o balanceamento
 
-Tudo que importa está em `js/config.js`: ouro e vidas iniciais, tamanho do grid,
-estatísticas de cada nível de torre e de cada inimigo. A curva de dificuldade
-está em `js/waves.js` (`hpMultiplier` e `build`).
+Tudo que importa está em `js/config.js`: ouro e vidas iniciais, estatísticas base
+e ramos de cada torre, receitas de fusão, inimigos e afixos, magias. A curva de
+dificuldade está em `js/waves.js` (`levelFor`, `affixPool` e `build`), e a
+economia de XP em `js/meta.js`.
 
 ## Licença
 

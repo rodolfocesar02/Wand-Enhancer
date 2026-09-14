@@ -7,75 +7,114 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div id="app">
-  <header id="hud">
-    <h1>Tower&nbsp;Defense</h1>
-    <div class="stats">
-      <div class="stat" title="Ouro disponível"><span class="icon gold"></span><span id="stat-gold">0</span></div>
-      <div class="stat" title="Vidas restantes"><span class="icon lives"></span><span id="stat-lives">0</span></div>
-      <div class="stat" title="Onda atual"><span class="icon wave"></span><span id="stat-wave">0</span></div>
-      <div class="stat" title="Pontuação"><span class="icon score"></span><span id="stat-score">0</span></div>
-    </div>
-  </header>
 
-  <main id="stage">
-    <div id="board">
-      <canvas id="canvas" width="960" height="576"></canvas>
-      <div id="overlay" class="overlay">
-        <div class="panel">
-          <h2 id="overlay-title">Tower Defense</h2>
-          <p id="overlay-text">Construa torres no terreno livre para montar um labirinto.
-             Os inimigos sempre buscam o caminho mais curto até a saída &mdash; quanto mais longo
-             você fizer o percurso, mais tempo suas torres têm para atirar.</p>
-          <button id="overlay-btn" class="primary">Começar</button>
-        </div>
+<!-- ============================ MENU / META ============================ -->
+<div id="screen-menu" class="screen">
+  <div class="menu-wrap">
+    <header class="menu-head">
+      <div>
+        <h1>Tower&nbsp;Defense</h1>
+        <p class="tagline">25 ondas por expedição. O que você desbloqueia fica para sempre.</p>
       </div>
+      <div class="xp-box">
+        <span class="xp-label">XP disponível</span>
+        <strong id="meta-xp">0</strong>
+      </div>
+    </header>
+
+    <section class="menu-stats" id="meta-stats"></section>
+
+    <section class="menu-block">
+      <h2>Mapa</h2>
+      <div id="map-list" class="map-list"></div>
+    </section>
+
+    <section class="menu-block">
+      <h2>Reino</h2>
+      <p class="block-hint">Melhorias permanentes. Compradas uma vez, valem em toda expedição.</p>
+      <div id="meta-list" class="meta-grid"></div>
+    </section>
+
+    <div class="menu-actions">
+      <button id="btn-start" class="primary big">Iniciar expedição</button>
+      <button id="btn-wipe" class="ghost">Apagar progresso</button>
     </div>
+  </div>
+</div>
 
-    <aside id="sidebar">
-      <section class="shop">
-        <h3>Torres</h3>
-        <div id="shop-list"></div>
-      </section>
+<!-- ============================== PARTIDA ============================== -->
+<div id="screen-game" class="screen" hidden>
+  <div id="app">
+    <header id="hud">
+      <h1>Tower&nbsp;Defense</h1>
+      <div class="stats">
+        <div class="stat" title="Ouro"><span class="icon gold"></span><span id="stat-gold">0</span></div>
+        <div class="stat" title="Vidas"><span class="icon lives"></span><span id="stat-lives">0</span></div>
+        <div class="stat" title="Onda"><span class="icon wave"></span><span id="stat-wave">0</span></div>
+        <div class="stat" title="Pontuação"><span class="icon score"></span><span id="stat-score">0</span></div>
+      </div>
+    </header>
 
-      <section id="inspector" class="inspector" hidden>
-        <h3 id="insp-name">Torre</h3>
-        <dl id="insp-stats"></dl>
-        <div class="inspector-actions">
-          <button id="btn-upgrade" class="primary"></button>
+    <main id="stage">
+      <div id="board">
+        <canvas id="canvas" width="960" height="576"></canvas>
+        <div id="overlay" class="overlay" hidden>
+          <div class="panel">
+            <h2 id="overlay-title">Fim</h2>
+            <p id="overlay-text"></p>
+            <div id="overlay-xp" class="overlay-xp"></div>
+            <button id="overlay-btn" class="primary">Voltar ao menu</button>
+          </div>
+        </div>
+        <div id="spellbar" class="spellbar"></div>
+      </div>
+
+      <aside id="sidebar">
+        <section class="shop">
+          <h3>Torres</h3>
+          <div id="shop-list"></div>
+        </section>
+
+        <section id="inspector" class="inspector" hidden>
+          <h3 id="insp-name">Torre</h3>
+          <div id="insp-split" class="split"></div>
+          <dl id="insp-stats"></dl>
+          <div id="insp-branches" class="branches"></div>
+          <div id="insp-fusion" class="fusion"></div>
           <button id="btn-sell" class="danger"></button>
-        </div>
-      </section>
+        </section>
 
-      <section class="controls">
-        <button id="btn-wave" class="primary">Próxima onda</button>
-        <div class="control-row">
-          <button id="btn-pause">Pausar</button>
-          <button id="btn-speed">1x</button>
-        </div>
-      </section>
+        <section class="controls">
+          <div id="wave-preview" class="wave-preview"></div>
+          <button id="btn-wave" class="primary">Chamar onda</button>
+          <div class="control-row">
+            <button id="btn-pause">Pausar</button>
+            <button id="btn-speed">1x</button>
+          </div>
+          <button id="btn-quit" class="ghost">Abandonar</button>
+        </section>
 
-      <section class="legend">
-        <h3>Atalhos</h3>
-        <ul>
-          <li><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> escolher torre</li>
-          <li><kbd>N</kbd> chamar onda</li>
-          <li><kbd>Espaço</kbd> pausar</li>
-          <li><kbd>Esc</kbd> cancelar</li>
-        </ul>
-      </section>
-    </aside>
-  </main>
+        <section class="legend">
+          <h3>Atalhos</h3>
+          <ul id="legend-list"></ul>
+        </section>
+      </aside>
+    </main>
 
-  <p id="hint">Chamar a onda mais cedo rende ouro extra.</p>
+    <p id="hint"></p>
+  </div>
 </div>
 
 <script src="js/config.js"></script>
+<script src="js/maps.js"></script>
+<script src="js/meta.js"></script>
 <script src="js/grid.js"></script>
+<script src="js/damage.js"></script>
 <script src="js/enemy.js"></script>
 <script src="js/projectile.js"></script>
 <script src="js/tower.js"></script>
 <script src="js/waves.js"></script>
+<script src="js/spells.js"></script>
 <script src="js/renderer.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/game.js"></script>
