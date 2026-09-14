@@ -1,0 +1,12 @@
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Node (caso voce adicione um servidor local ou ferramentas depois)
+node_modules/
+npm-debug.log*
