@@ -44,7 +44,6 @@ class Game {
     this.hoverCell = null;
     this.selectedType = null;
     this.selectedTower = null;
-    this.fuseArmed = null;
     this.buildCache = new Map();
 
     this.rateBonus = 0;
@@ -167,7 +166,6 @@ class Game {
     this.gold += refund;
     this.removeTower(t);
     this.selectedTower = null;
-    this.fuseArmed = null;
     this.notifyCell('+' + refund, t.c, t.r, '#4ade80');
     this.emit();
   }
@@ -207,7 +205,6 @@ class Game {
     this.removeTower(other);
     tower.becomeFusion(key, other);
     this.selectedTower = tower;
-    this.fuseArmed = null;
     this.invalidateBuildCache();
     this.notifyCell(FUSIONS[key].name, tower.c, tower.r, FUSIONS[key].color);
     this.effects.push({ x: tower.x, y: tower.y, radius: 70, life: 0.6, max: 0.6,
@@ -393,7 +390,7 @@ class Game {
   selectType(typeKey) {
     if (this.unlockedTowers.indexOf(typeKey) === -1) return;
     this.selectedType = this.selectedType === typeKey ? null : typeKey;
-    if (this.selectedType) { this.selectedTower = null; this.fuseArmed = null; }
+    if (this.selectedType) this.selectedTower = null;
     this.spellbook.pending = null;
     this.emit();
   }
@@ -405,18 +402,9 @@ class Game {
 
     const existing = this.towerAt.get(this.key(c, r));
 
-    // Segundo clique da fusao: escolher a vizinha.
-    if (this.fuseArmed && existing && existing !== this.fuseArmed) {
-      const options = this.fusionOptions(this.fuseArmed);
-      for (const opt of options) {
-        if (opt.other === existing) { this.fuse(this.fuseArmed, existing); return; }
-      }
-    }
-
     if (existing) {
       this.selectedTower = this.selectedTower === existing ? null : existing;
       this.selectedType = null;
-      this.fuseArmed = null;
       this.emit();
       return;
     }
@@ -424,20 +412,12 @@ class Game {
     if (this.selectedType) { this.build(this.selectedType, c, r); return; }
 
     this.selectedTower = null;
-    this.fuseArmed = null;
-    this.emit();
-  }
-
-  armFusion() {
-    if (!this.selectedTower) return;
-    this.fuseArmed = this.fuseArmed === this.selectedTower ? null : this.selectedTower;
     this.emit();
   }
 
   clearSelection() {
     this.selectedType = null;
     this.selectedTower = null;
-    this.fuseArmed = null;
     this.spellbook.pending = null;
     this.emit();
   }

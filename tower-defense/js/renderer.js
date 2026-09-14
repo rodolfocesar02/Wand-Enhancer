@@ -185,9 +185,9 @@ const Renderer = {
 
   towers(ctx, game) {
     const t = CONFIG.tile;
-    const fuseTargets = game.fuseArmed
-      ? game.fusionOptions(game.fuseArmed).map(o => o.other)
-      : [];
+    // Vizinhas que formam receita com a torre selecionada piscam em amarelo,
+    // para a fusao ser descoberta olhando o tabuleiro e nao lendo o manual.
+    const fuseTargets = game.fusionOptions(game.selectedTower).map(o => o.other);
 
     for (const tower of game.towers) {
       const sel = game.selectedTower === tower;

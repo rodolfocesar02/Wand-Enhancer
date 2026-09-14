@@ -251,6 +251,12 @@ const UI = {
     e.sell.textContent = 'Vender (+' + t.sellValue + ')';
   },
 
+  /* O painel de fusão precisa ENSINAR, não só recusar.
+   *
+   * Só 6 dos 15 pares têm receita e só vizinhas ortogonais contam, então
+   * "nenhuma vizinha forma receita" deixava o jogador sem saber o que
+   * tentar. Agora o painel sempre lista com o que esta torre combina, e diz
+   * exatamente o que falta quando a vizinha certa já está do lado. */
   syncFusion(t) {
     const g = this.game;
     const e = this.el.inspFusion;
@@ -258,25 +264,47 @@ const UI = {
 
     if (!g.fusionEnabled || t.fused) return;
 
-    if (!t.maxLevel) {
-      e.innerHTML = '<span class="hintline">Fusão exige nível 3 nas duas torres.</span>';
-      return;
-    }
-
     const options = g.fusionOptions(t);
-    if (options.length === 0) {
-      e.innerHTML = '<span class="hintline">Nenhuma vizinha nível 3 forma receita.</span>';
-      return;
-    }
-
     for (const opt of options) {
       const btn = document.createElement('button');
-      btn.className = 'branch' + (g.fuseArmed === t ? ' armed' : '');
+      btn.className = 'branch fuse-ready';
       btn.innerHTML =
         '<strong>Fundir → ' + opt.def.name + '</strong>' +
         '<small>' + opt.def.blurb + ' &middot; libera a célula da outra torre</small>';
       btn.addEventListener('click', () => g.fuse(t, opt.other));
       e.appendChild(btn);
+    }
+
+    // Vizinha ortogonal que forma receita mas ainda não chegou ao nível 3.
+    const quaseLa = [];
+    for (const d of DIRS) {
+      const other = g.towerAt.get(g.key(t.c + d[0], t.r + d[1]));
+      if (!other || other.fused) continue;
+      const recipe = FUSIONS[fusionKey(t.typeKey, other.typeKey)];
+      if (!recipe) continue;
+      if (other.maxLevel && t.maxLevel) continue;   // já virou botão acima
+      quaseLa.push((!t.maxLevel ? 'Esta torre' : other.def.name) + ' precisa chegar ao nível 3');
+    }
+
+    const linhas = [];
+    for (const q of quaseLa) linhas.push('<span class="hintline warn">' + q + '.</span>');
+
+    if (options.length === 0 && quaseLa.length === 0) {
+      const receitas = fusionsFor(t.typeKey)
+        .map(f => '<b>' + TOWER_TYPES[f.partner].name + '</b> → ' + f.def.name)
+        .join('<br>');
+      linhas.push(
+        '<span class="hintline">Combina com (nível 3 nas duas, lado a lado, sem diagonal):<br>' +
+        receitas + '</span>');
+    }
+
+    // appendChild, nunca innerHTML += : concatenar innerHTML re-serializa e
+    // recria todo o subárvore, o que descarta os listeners dos botões de
+    // fusão anexados logo acima -- inclusive quando a string somada é vazia.
+    if (linhas.length) {
+      const box = document.createElement('div');
+      box.innerHTML = linhas.join('');
+      while (box.firstChild) e.appendChild(box.firstChild);
     }
   },
 

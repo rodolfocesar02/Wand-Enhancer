@@ -225,7 +225,6 @@ canvas {
 .fusion { display: grid; gap: 7px; margin-bottom: 9px; }
 .fusion .hintline { color: var(--muted); font-size: 12px; }
 .fusion button { background: #3b2d12; border-color: #a16207; }
-.fusion button.armed { background: #6b4a08; border-color: #fde047; }
 
 .wave-preview { font-size: 12.5px; color: var(--muted); margin-bottom: 9px; min-height: 34px; }
 .wave-preview .tag {
@@ -273,3 +272,7 @@ kbd {
 
 /* Botão aguardando o segundo clique de confirmação. */
 button.arming { background: #7f1d3a; border-color: #f43f5e; color: var(--text); }
+
+.fusion .hintline.warn { color: var(--gold); }
+.fusion .hintline b { color: var(--text); font-weight: 600; }
+.fusion button.fuse-ready { background: #3b2d12; border-color: #a16207; }

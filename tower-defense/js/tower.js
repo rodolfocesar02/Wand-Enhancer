@@ -14,6 +14,20 @@ function fusionKey(a, b) {
   return [a, b].sort().join('+');
 }
 
+/* Todas as receitas de que um tipo de torre participa, com o parceiro que
+ * cada uma exige. A interface usa isto para dizer ao jogador o que combina
+ * com a torre selecionada, em vez de so informar que nada combina. */
+function fusionsFor(typeKey) {
+  const out = [];
+  for (const key of Object.keys(FUSIONS)) {
+    const parts = key.split('+');
+    const i = parts.indexOf(typeKey);
+    if (i === -1) continue;
+    out.push({ partner: parts[1 - i], def: FUSIONS[key] });
+  }
+  return out;
+}
+
 class Tower {
   constructor(typeKey, c, r, tile) {
     this.typeKey = typeKey;
