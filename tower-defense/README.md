@@ -340,20 +340,51 @@ caminho, não de receita — exigir que o par certo caia lado a lado é pedir
 coincidência, e a mecânica quase nunca aparecia. Sem a adjacência ela continua
 sendo uma escolha de terreno, só que uma escolha de verdade em vez de um sorteio.
 
-| Receita | Resultado |
-|---|---|
-| Arqueira + Altar | **Arqueira Rúnica** — flechas híbridas em cadência alta |
-| Balista + Bombarda | **Morteiro Pesado** — área enorme com alcance de cerco |
-| Altar + Glacial | **Prisma Congelante** — magia em área que congela o grupo |
-| Bombarda + Templo | **Forja de Guerra** — explosão híbrida |
-| Altar + Balista | **Lança Etérea** — perfura a fila com dano mágico puro |
-| Arqueira + Glacial | **Caçadora de Gelo** — tiro rápido que mantém tudo lento |
+| Receita | Resultado | Arte |
+|---|---|---|
+| Arqueira + Altar | **Arqueira Rúnica** — flechas híbridas em cadência alta | vetor |
+| Balista + Bombarda | **Morteiro Pesado** — área enorme com alcance de cerco | ✅ |
+| Altar + Glacial | **Prisma Congelante** — magia em área que congela o grupo | vetor |
+| Bombarda + Templo | **Forja de Guerra** — explosão híbrida | vetor |
+| Altar + Balista | **Lança Etérea** — perfura a fila com dano mágico puro | ✅ |
+| Arqueira + Glacial | **Caçadora de Gelo** — tiro rápido que mantém tudo lento | vetor |
+| Balista + Glacial | **Lança do Inverno** — perfura a fila e deixa todos lentos | ✅ |
+| Balista + Templo | **Balista Gêmea** — dois virotes, um de cada escola | ✅ |
+| Arqueira + Balista | **Balista de Repetição** — cadência de arqueira, virote de balista | ✅ |
+
+### A família da Balista
+
+![As cinco fusões da Balista: parada em cima, lampejo do tiro embaixo](docs/fusoes-arte.png)
+
+As cinco fusões com arte são todas da Balista, e isso a torna o eixo do sistema:
+ela aparece em **5 das 9 receitas**, enquanto as outras torres aparecem em 2 ou 3.
+É um desequilíbrio de design assumido, não um acidente. O contrapeso é que toda
+fusão da Balista fica na **ponta baixa** da faixa de 80–92%, porque perfuração e
+alcance longo já valem por si.
+
+A curva alcance × DPS vale dentro da família: **215/101, 195/108, 175/116**. Mais
+perto, mais forte — a mesma regra das torres base.
+
+Os dois quadros de cada uma vieram em par (parada / atirando), não em trio como
+as torres base. O `cycle: [0, 1, 0]` transforma isso num **lampejo**: o quadro de
+tiro aparece só nos primeiros 30% da recarga e some depois, em vez de ficar
+congelado com a boca acesa a partida inteira.
+
+O Morteiro Pesado tem `angleOffset: Math.PI` porque a arte dispara o canhão para
+a **esquerda** enquanto o virote aponta para a direita. Girar 180° faz o clarão
+apontar para o alvo — e o clarão é o que o olho segue, não o virote parado.
 
 **A regra de balanceamento é medida, não chutada:** o DPS da fundida fica entre
-**80% e 92% da soma** das duas torres nível 3 que ela consome. Acima disso,
-fundir vira obrigatório e as 6 torres viram decoração. Abaixo, fundir vira
-armadilha e a mecânica inteira é código morto — que foi exatamente o bug que a
-primeira versão tinha (as 6 receitas entregavam de 33% a 69%).
+**80% e 92%** da soma das duas torres nível 3 que ela consome — soma das
+**melhores** pontas de evolução de cada uma, não da média delas. (Contra a média
+as razões dão 1,07 a 1,38, o que parece violar a regra e não viola: é o
+denominador errado.) Acima da faixa, fundir vira obrigatório e as 6 torres viram
+decoração. Abaixo, fundir vira armadilha e a mecânica inteira é código morto —
+que foi exatamente o bug que a primeira versão tinha (as 6 receitas entregavam de
+33% a 69%).
+
+As nove medidas hoje: 0,802 / 0,816 / 0,818 / 0,820 / 0,823 / 0,848 / 0,852 /
+0,879 / 0,907.
 
 A troca real: o jogador perde um pouco de dano bruto e ganha cobertura contra os
 dois tipos de resistência, uma célula livre e mais alcance ou área. Em
@@ -539,7 +570,7 @@ que sobrou. Há também controle de velocidade (1x / 2x / 3x).
 index.html          duas telas (menu e partida) e ordem de carga dos scripts
 css/style.css       tema, HUD, loja, inspetor e menu
 js/config.js        constantes, torres, fusões, inimigos, afixos e magias
-js/sprites.js       sprites pintados das torres, em data URI
+js/sprites.js       sprites pintados das torres e das 5 fusões da Balista, em data URI
 js/mobs.js          sprites pintados dos inimigos, com tintura por afixo
 js/maps.js          os 3 mapas
 js/meta.js          XP, desbloqueios e persistência em localStorage

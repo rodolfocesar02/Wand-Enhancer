@@ -323,6 +323,35 @@ const FUSIONS = {
     blurb: 'Tiro rápido que mantém a onda inteira lenta',
     base: { range: 150, cooldown: 0.34, projSpeed: 640, dmg: { fisico: 28, magico: 14 },
             slow: 0.34, slowDur: 1.5 }
+  },
+
+  /* --- familia da Balista ------------------------------------------------
+   *
+   * A Balista participava de duas receitas so. Com a arte das cinco chegando,
+   * ela vira o eixo do sistema de fusao: aparece em 5 das 9 receitas. Isso e
+   * um desequilibrio de design assumido -- as outras torres aparecem em 2 ou
+   * 3 -- e o contrapeso e que toda fusao da Balista fica na ponta BAIXA da
+   * faixa de 80-92%, porque perfuracao e alcance longo ja valem por si.
+   *
+   * A curva alcance x DPS continua valendo entre elas: 215/101, 195/108,
+   * 175/116. Mais perto, mais forte. */
+  'balista+glacial': {
+    name: 'Lança do Inverno', color: '#93c5fd', shape: 'balista',
+    blurb: 'Perfura a fila e deixa todos lentos',
+    base: { range: 215, cooldown: 1.78, projSpeed: 820, dmg: { fisico: 60, magico: 120 },
+            pierce: 3, slow: 0.45, slowDur: 2.0 }
+  },
+  'balista+templo': {
+    name: 'Balista Gêmea', color: '#c4b5fd', shape: 'balista',
+    blurb: 'Dois virotes, um de cada escola',
+    base: { range: 195, cooldown: 1.45, projSpeed: 880, dmg: { fisico: 78, magico: 78 },
+            pierce: 3 }
+  },
+  'arqueira+balista': {
+    name: 'Balista de Repetição', color: '#a3e635', shape: 'arqueira',
+    blurb: 'Cadência de arqueira com virote de balista',
+    base: { range: 175, cooldown: 0.62, projSpeed: 760, dmg: { fisico: 72, magico: 0 },
+            pierce: 2 }
   }
 };
 
