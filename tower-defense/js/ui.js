@@ -35,6 +35,10 @@ const UI = {
       menu: document.getElementById('tower-menu'),
       tmMute: document.getElementById('tm-mute'),
       tmRepair: document.getElementById('tm-repair'),
+      reportBox: document.getElementById('report-box'),
+      reportTable: document.getElementById('report-table'),
+      reportText: document.getElementById('report-text'),
+      reportCopy: document.getElementById('report-copy'),
       medo: document.getElementById('btn-medo'),
       tmName: document.getElementById('tm-name'),
       tmClose: document.getElementById('tm-close'),
@@ -79,6 +83,21 @@ const UI = {
     this.el.tmClose.addEventListener('click', () => g.closeMenu());
     this.armTwice(this.el.quit, 'Abandonar', 'Abandonar mesmo? Clique de novo', () => g.endRun(false));
     this.el.overlayBtn.addEventListener('click', () => g.toMenu());
+
+    /* Copiar dentro de um iframe pode ser bloqueado, entao a área de texto é
+     * a via garantida e a API é só o atalho. */
+    this.el.reportCopy.addEventListener('click', () => {
+      const txt = this.el.reportText;
+      txt.select();
+      txt.setSelectionRange(0, txt.value.length);
+      const pronto = () => {
+        this.el.reportCopy.textContent = 'Copiado';
+        setTimeout(() => { this.el.reportCopy.textContent = 'Copiar relatório'; }, 1800);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt.value).then(pronto, () => {});
+      } else { try { document.execCommand('copy'); pronto(); } catch (e) {} }
+    });
 
     window.addEventListener('resize', () => { if (g.menuTower) this.placeMenu(g.menuTower); });
   },
@@ -357,6 +376,43 @@ const UI = {
       : 'Caiu na onda ' + g.wave + ' de ' + CONFIG.wavesPerRun + ', com ' + g.kills +
         ' abates e ' + g.score + ' pontos.';
     e.overlayXp.textContent = '+' + g.lastXp + ' XP';
+    this.syncReport();
+  },
+
+  /* Tabela do relatório. Vermelho onde vazou ou caiu torre, verde na onda em
+   * que o labirinto deu um salto -- que é o instante que interessa comparar
+   * entre partidas. */
+  syncReport() {
+    const g = this.game;
+    const e = this.el;
+
+    e.reportBox.hidden = g.registro.length === 0;
+    if (e.reportBox.hidden) return;
+
+    const cols = [['onda','Onda'],['rota','Rota'],['folga','Folga'],['torres','Torres'],
+                  ['obras','Obra'],['construidas','+T'],['destruidas','−T'],
+                  ['vazou','Vazou'],['vidas','Vidas'],['ouro','Ouro'],
+                  ['gastoTorres','$torre'],['gastoEvolucao','$evo'],['gastoReparo','$rep']];
+
+    let html = '<table><thead><tr>' +
+      cols.map(c => '<th>' + c[1] + '</th>').join('') + '</tr></thead><tbody>';
+
+    let rotaAnterior = 0;
+    for (const r of g.registro) {
+      const salto = r.rota - rotaAnterior >= 4;
+      rotaAnterior = r.rota;
+      html += '<tr>' + cols.map(c => {
+        const k = c[0];
+        let v = r[k];
+        if (k === 'folga') v = v.toFixed(2);
+        let cls = '';
+        if ((k === 'vazou' || k === 'destruidas') && r[k] > 0) cls = ' class="alerta"';
+        if (k === 'rota' && salto) cls = ' class="marco"';
+        return '<td' + cls + '>' + v + '</td>';
+      }).join('') + '</tr>';
+    }
+    e.reportTable.innerHTML = html + '</tbody></table>';
+    e.reportText.value = g.relatorio();
   },
 
   /* ============================== tick ============================== */

@@ -52,6 +52,12 @@ class Game {
     this.fusePending = null; // escolha de parceira para fusão em andamento
     this.buildCache = new Map();
 
+    // Registro da partida, onda a onda. Existe porque o bot nao joga como
+    // gente: ele fecha a serpentina em poucas ondas e o jogador leva oito.
+    // Calibrar contra o bot sozinho estava mirando no alvo errado.
+    this.registro = [];
+    this.ondaStats = this.novaOndaStats();
+
     this.rateBonus = 0;
     this.rateTimer = 0;
     this.screenTint = null;
@@ -62,6 +68,57 @@ class Game {
     this.fusionEnabled = false;
     this.spellbook = new SpellBook(this.unlockedSpells, 1);
     this.lastXp = 0;
+  }
+
+  novaOndaStats() {
+    return { ouroTorres: 0, ouroEvolucao: 0, ouroReparo: 0,
+             construidas: 0, destruidas: 0, vazou: 0, abates: 0 };
+  }
+
+  /* Uma linha por onda: o que foi construido, o que caiu, o quanto o
+   * labirinto alongou a viagem e quanto vazou. */
+  fecharRegistro() {
+    const s = this.ondaStats;
+    const sp = this.grid.spawn;
+    this.registro.push({
+      onda: this.wave,
+      rota: this.grid.passos(this.grid.flow),
+      folga: Math.round(this.grid.folga(sp.c, sp.r) * 100) / 100,
+      torres: this.towers.length,
+      obras: this.towers.filter(t => !t.pronta).length,
+      construidas: s.construidas,
+      destruidas: s.destruidas,
+      vazou: s.vazou,
+      vidas: this.lives,
+      ouro: this.gold,
+      gastoTorres: s.ouroTorres,
+      gastoEvolucao: s.ouroEvolucao,
+      gastoReparo: s.ouroReparo,
+      abates: s.abates
+    });
+    this.ondaStats = this.novaOndaStats();
+  }
+
+  /* Texto pronto para colar de volta numa conversa. Tabela, nao prosa: o que
+   * se quer daqui e comparar partidas, nao ler. */
+  relatorio() {
+    const cab = '| Onda | Rota | Folga | Torres | Obra | +T | -T | Vazou | Vidas | Ouro | $torre | $evo | $rep |';
+    const sep = '|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|';
+    const linhas = this.registro.map(r =>
+      '| ' + [r.onda, r.rota, r.folga.toFixed(2), r.torres, r.obras, r.construidas,
+              r.destruidas, r.vazou, r.vidas, r.ouro, r.gastoTorres,
+              r.gastoEvolucao, r.gastoReparo].join(' | ') + ' |');
+
+    const modo = 'medo=' + (CONFIG.medo ? 'on' : 'off') +
+                 ' paciencia=' + (CONFIG.medoPaciencia ? 'on' : 'off') +
+                 ' obra=' + (CONFIG.obra ? 'on' : 'off');
+    const fim = this.screen === 'victory' ? 'venceu' : 'caiu na onda ' + this.wave;
+
+    return ['Tower Defense - relatorio de partida',
+            'mapa=' + this.map.id + '  ' + modo,
+            'resultado: ' + fim + ', ' + this.lives + ' vidas, ' +
+              this.kills + ' abates, ' + this.score + ' pontos',
+            '', cab, sep].concat(linhas).join('\n');
   }
 
   /* ------------------------------------------------------------- run ---- */
@@ -89,6 +146,12 @@ class Game {
   }
 
   endRun(won) {
+    // A onda em que a partida acabou tambem entra no registro: e justamente
+    // a linha que explica por que acabou.
+    if (this.wave > 0 && (this.registro.length === 0 ||
+        this.registro[this.registro.length - 1].onda !== this.wave)) {
+      this.fecharRegistro();
+    }
     this.screen = won ? 'victory' : 'gameover';
     this.lastXp = Meta.awardRun(this.wave, this.score, won);
     this.emit();
@@ -248,6 +311,8 @@ class Game {
     this.towers.push(tower);
     this.towerAt.set(this.key(c, r), tower);
     this.gold -= def.cost;
+    this.ondaStats.ouroTorres += def.cost;
+    this.ondaStats.construidas += 1;
 
     // A celula so fecha quando a obra termina. Enquanto isso a rota curta
     // continua aberta -- meio labirinto nao segura ninguem.
@@ -283,6 +348,7 @@ class Game {
     }
 
     this.gold -= branch.cost;
+    this.ondaStats.ouroEvolucao += branch.cost;
     t.upgrade(branchKey);
     this.notifyCell(branch.name, t.c, t.r, t.def.color);
     this.emit();
@@ -517,6 +583,7 @@ class Game {
       if (e.escaped) {
         this.lives -= e.leak;
         this.leaked += 1;
+        this.ondaStats.vazou += 1;
         leaked = true;
         this.notifyCell('-' + e.leak, this.grid.exit.c, this.grid.exit.r, '#f87171');
       }
@@ -528,6 +595,7 @@ class Game {
         this.gold += e.gold;
         this.score += e.gold;
         this.kills += 1;
+        this.ondaStats.abates += 1;
         this.notify('+' + e.gold, e.x, e.y - 8, '#fbbf24');
         this.effects.push({ x: e.x, y: e.y, radius: e.radius + 6, life: 0.22, max: 0.22, color: e.color });
         this.effects.push({ kind: 'shards', x: e.x, y: e.y, radius: e.radius,
@@ -552,6 +620,7 @@ class Game {
     }
 
     if (this.wave > 0 && !this.waveInProgress && this.restTimer <= 0) {
+      this.fecharRegistro();
       const reward = Waves.reward(this.wave);
       this.gold += reward;
       this.score += reward;
@@ -603,6 +672,7 @@ class Game {
     if (!torre || torre.destruida) return;
 
     if (torre.apanhar(dano)) {
+      this.ondaStats.destruidas += 1;
       this.removeTower(torre);
       if (this.selectedTower === torre) this.selectedTower = null;
       if (this.menuTower === torre) this.menuTower = null;
@@ -645,6 +715,7 @@ class Game {
     const custo = t.custoReparo;
     if (this.gold < custo) { this.notifyCell('Ouro insuficiente', t.c, t.r, '#f87171'); return false; }
     this.gold -= custo;
+    this.ondaStats.ouroReparo += custo;
     t.hp = t.maxHp;
     this.notifyCell('-' + custo, t.c, t.r, '#4ade80');
     this.emit();

@@ -223,7 +223,29 @@ canvas {
   background: rgba(8, 12, 24, .88); border-radius: 12px; text-align: center; padding: 20px;
 }
 .overlay[hidden] { display: none; }
+.overlay .panel { max-height: 86%; overflow-y: auto; }
 .overlay h2 { margin: 0 0 10px; font-size: 26px; }
+
+/* Relatório da partida.
+ *
+ * O bot não joga como gente -- ele fecha a serpentina em poucas ondas e o
+ * jogador leva oito. Calibrar só contra o bot é mirar no alvo errado, então a
+ * partida de verdade precisa sair daqui em formato que dê para comparar. */
+.report { margin: 0 auto 16px; max-width: 560px; text-align: left; }
+.report summary { cursor: pointer; color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+.report textarea {
+  width: 100%; margin-top: 8px; font: 11px/1.4 ui-monospace, monospace;
+  background: #0d1424; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px; resize: vertical;
+}
+.report-table { max-height: 230px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+.report-table table { border-collapse: collapse; width: 100%; font-size: 11.5px; }
+.report-table th, .report-table td { padding: 3px 7px; text-align: right; white-space: nowrap; }
+.report-table th { position: sticky; top: 0; background: var(--bg-soft); color: var(--muted);
+                   font-weight: 600; font-size: 10.5px; }
+.report-table tr:nth-child(even) td { background: rgba(255,255,255,.028); }
+.report-table td.alerta { color: var(--lives); font-weight: 700; }
+.report-table td.marco { color: var(--ok); font-weight: 700; }
 .overlay p { margin: 0 0 14px; color: var(--muted); max-width: 440px; }
 .overlay-xp { margin-bottom: 18px; font-size: 19px; color: var(--ok); font-weight: 700; }
 
