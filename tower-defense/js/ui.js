@@ -274,6 +274,13 @@ const UI = {
     e.menu.style.top = Math.round(y) + 'px';
   },
 
+  /* Painel de fusão.
+   *
+   * A fusão aceita qualquer torre do tabuleiro, não só as vizinhas, então o
+   * botão aqui escolhe a RECEITA e a parceira é escolhida no mapa, com o
+   * tabuleiro escurecido e só as candidatas acesas. Listar parceiras por nome
+   * num painel não resolveria: o jogador precisa ver ONDE elas estão, porque
+   * a célula liberada muda o labirinto. */
   syncFusion(t) {
     const g = this.game;
     const e = this.el.tmFusion;
@@ -281,33 +288,29 @@ const UI = {
 
     if (!g.fusionEnabled || t.fused) return;
 
-    const options = g.fusionOptions(t);
-    for (const opt of options) {
+    const receitas = g.fusionRecipes(t);
+    for (const r of receitas) {
+      const n = r.partners.length;
       const btn = document.createElement('button');
       btn.className = 'branch fuse-ready';
       btn.innerHTML =
-        '<strong>Fundir → ' + opt.def.name + '</strong>' +
-        '<small>' + opt.def.blurb + ' &middot; libera a célula da outra torre</small>';
-      btn.addEventListener('click', () => g.fuse(t, opt.other));
+        '<strong>Fundir → ' + r.def.name + '</strong>' +
+        '<span class="price">' + n + '</span>' +
+        '<small>' + r.def.blurb + ' &middot; ' +
+        (n === 1 ? 'há 1 torre compatível' : 'há ' + n + ' torres compatíveis') + '</small>';
+      btn.addEventListener('click', () => g.fuseArm(r.key));
       e.appendChild(btn);
     }
 
-    const quaseLa = [];
-    for (const d of DIRS) {
-      const other = g.towerAt.get(g.key(t.c + d[0], t.r + d[1]));
-      if (!other || other.fused) continue;
-      if (!FUSIONS[fusionKey(t.typeKey, other.typeKey)]) continue;
-      if (other.maxLevel && t.maxLevel) continue;
-      quaseLa.push((!t.maxLevel ? 'Esta torre' : other.def.name) + ' precisa chegar ao nível 3');
-    }
-
-    const linhas = quaseLa.map(q => '<span class="hintline warn">' + q + '.</span>');
-    if (options.length === 0 && quaseLa.length === 0) {
-      const receitas = fusionsFor(t.typeKey)
+    const linhas = [];
+    if (!t.maxLevel) {
+      linhas.push('<span class="hintline warn">Esta torre precisa chegar ao nível 3.</span>');
+    } else if (receitas.length === 0) {
+      const combina = fusionsFor(t.typeKey)
         .map(f => '<b>' + TOWER_TYPES[f.partner].name + '</b> → ' + f.def.name)
         .join('<br>');
-      linhas.push('<span class="hintline">Combina com (nível 3 nas duas, lado a lado, sem diagonal):<br>' +
-                  receitas + '</span>');
+      linhas.push('<span class="hintline">Combina com (nível 3 nas duas, em qualquer ' +
+                  'lugar do tabuleiro):<br>' + combina + '</span>');
     }
 
     // appendChild, nunca innerHTML += : concatenar innerHTML re-serializa e
@@ -375,6 +378,9 @@ const UI = {
 
     if (g.paused) {
       text = 'Jogo pausado.';
+    } else if (g.fusePending) {
+      text = 'Toque na torre destacada para fundir em ' + g.fusePending.def.name +
+             '. Esc cancela.';
     } else if (g.spellbook.pending) {
       text = 'Toque no mapa para lançar ' + SPELLS[g.spellbook.pending].name + '.';
     } else if (g.screen === 'playing' && !g.waveInProgress && g.restTimer > 0) {

@@ -45,6 +45,7 @@ class Game {
     this.selectedType = null;
     this.selectedTower = null;
     this.menuTower = null;   // torre com o menu de ações aberto (toque longo)
+    this.fusePending = null; // escolha de parceira para fusão em andamento
     this.buildCache = new Map();
 
     this.rateBonus = 0;
@@ -195,6 +196,7 @@ class Game {
     this.removeTower(t);
     this.selectedTower = null;
     this.menuTower = null;
+    this.fusePending = null;
     this.notifyCell('+' + refund, t.c, t.r, '#4ade80');
     this.emit();
   }
@@ -210,30 +212,68 @@ class Game {
   /* ------------------------------------------------------------ fusao -- */
 
   /* Vizinhas ortogonais que formam receita valida com a torre dada. */
-  fusionOptions(tower) {
+  /* Receitas disponiveis para esta torre, com TODAS as parceiras possiveis do
+   * tabuleiro -- nao so as vizinhas.
+   *
+   * A adjacencia era uma exigencia minha e estava errada. O jogador posiciona
+   * torre em funcao do labirinto, nao de receita; pedir que duas nivel 3 do
+   * par certo caiam lado a lado e pedir coincidencia, e a mecanica quase nunca
+   * aparecia. A decisao de terreno continua existindo -- a celula da parceira
+   * e liberada onde quer que ela esteja -- so que agora e uma escolha, e nao
+   * um sorteio. */
+  fusionRecipes(tower) {
     if (!this.fusionEnabled || !tower || tower.fused || !tower.maxLevel) return [];
 
-    const out = [];
-    for (const d of DIRS) {
-      const other = this.towerAt.get(this.key(tower.c + d[0], tower.r + d[1]));
-      if (!other || other.fused || !other.maxLevel) continue;
+    const porReceita = new Map();
+    for (const other of this.towers) {
+      if (other === tower || other.fused || !other.maxLevel) continue;
 
       const key = fusionKey(tower.typeKey, other.typeKey);
-      if (FUSIONS[key]) out.push({ key: key, def: FUSIONS[key], other: other });
+      if (!FUSIONS[key]) continue;
+
+      if (!porReceita.has(key)) porReceita.set(key, { key: key, def: FUSIONS[key], partners: [] });
+      porReceita.get(key).partners.push(other);
     }
-    return out;
+    return Array.from(porReceita.values());
+  }
+
+  /* Arma a escolha da parceira: o tabuleiro escurece e so as torres que
+   * servem para esta receita ficam com a cor natural. */
+  fuseArm(recipeKey) {
+    const t = this.selectedTower;
+    if (!t) return false;
+
+    const receita = this.fusionRecipes(t).find(r => r.key === recipeKey);
+    if (!receita) return false;
+
+    this.fusePending = { tower: t, key: recipeKey, def: receita.def, partners: receita.partners };
+    this.menuTower = null;
+    this.selectedType = null;
+    this.spellbook.pending = null;
+    this.emit();
+    return true;
+  }
+
+  fuseCancel() {
+    if (!this.fusePending) return;
+    this.fusePending = null;
+    this.emit();
   }
 
   fuse(tower, other) {
     const key = fusionKey(tower.typeKey, other.typeKey);
     if (!FUSIONS[key] || !this.fusionEnabled) return false;
-    if (tower.fused || other.fused || !tower.maxLevel || !other.maxLevel) return false;
+    if (tower === other || tower.fused || other.fused) return false;
+    if (!tower.maxLevel || !other.maxLevel) return false;
 
-    // A torre fundida fica na celula da selecionada; a outra celula abre e o
-    // labirinto muda junto -- fundir tambem e uma decisao de terreno.
+    // A torre fundida fica na celula da selecionada; a celula da parceira abre
+    // e o labirinto muda junto -- fundir continua sendo decisao de terreno,
+    // mesmo com as duas longe uma da outra. Liberar celula nunca pode selar o
+    // mapa, entao nao ha o que validar aqui.
     this.removeTower(other);
     tower.becomeFusion(key, other);
     this.selectedTower = tower;
+    this.fusePending = null;
     this.invalidateBuildCache();
     this.notifyCell(FUSIONS[key].name, tower.c, tower.r, FUSIONS[key].color);
     this.effects.push({ x: tower.x, y: tower.y, radius: 70, life: 0.6, max: 0.6,
@@ -461,6 +501,16 @@ class Game {
 
     const existing = this.towerAt.get(this.key(c, r));
 
+    // Escolha da parceira de fusão: só as torres destacadas respondem.
+    if (this.fusePending) {
+      if (existing && this.fusePending.partners.indexOf(existing) !== -1) {
+        this.fuse(this.fusePending.tower, existing);
+      } else {
+        this.fuseCancel();
+      }
+      return;
+    }
+
     if (existing) {
       this.selectedTower = this.selectedTower === existing ? null : existing;
       this.selectedType = null;
@@ -497,6 +547,7 @@ class Game {
     this.selectedType = null;
     this.selectedTower = null;
     this.menuTower = null;
+    this.fusePending = null;
     this.spellbook.pending = null;
     this.emit();
   }

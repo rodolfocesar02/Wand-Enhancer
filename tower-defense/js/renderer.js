@@ -32,6 +32,7 @@ const Renderer = {
     this.projectiles(ctx, game);
     this.effects(ctx, game);
     this.floaters(ctx, game);
+    this.fuseOverlay(ctx, game);
     this.tint(ctx, game);
     this.strip(ctx, game);
   },
@@ -212,64 +213,115 @@ const Renderer = {
   /* ------------------------------------------------------------- torres -- */
 
   towers(ctx, game) {
-    const t = CONFIG.tile;
-    // Vizinhas que formam receita com a torre selecionada piscam em amarelo,
-    // para a fusao ser descoberta olhando o tabuleiro e nao lendo o manual.
-    const fuseTargets = game.fusionOptions(game.selectedTower).map(o => o.other);
-
     for (const tower of game.towers) {
-      const sel = game.selectedTower === tower;
-
-      if (sel) {
-        ctx.save();
-        ctx.fillStyle = 'rgba(255,255,255,.06)';
-        ctx.strokeStyle = 'rgba(255,255,255,.4)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(tower.x, tower.y, tower.stats.range, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      // Alvo valido de fusao piscando.
-      if (fuseTargets.indexOf(tower) !== -1) {
-        ctx.save();
-        ctx.globalAlpha = 0.4 + 0.4 * Math.sin(game.elapsed * 8);
-        ctx.strokeStyle = '#fde047';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(tower.c * t + 2, tower.r * t + 2, t - 4, t - 4);
-        ctx.restore();
-      }
-
-      const set = SpriteSheet.get(tower.typeKey);
-      if (set) {
-        // Sprite pintado: o disco de pedra é circular, então girar a peça
-        // inteira em direção ao alvo não quebra a leitura da base.
-        const disc = t * CONFIG.spriteOverflow;
-        const size = disc / set.discRatio;
-        ctx.save();
-        ctx.translate(tower.x, tower.y);
-        // angleOffset corrige a arte que aponta para cima em vez da direita.
-        ctx.rotate(tower.angle + (set.angleOffset || 0));
-        ctx.drawImage(set.images[this.spriteFrame(tower, set)], -size / 2, -size / 2, size, size);
-        ctx.restore();
-      } else {
-        ctx.fillStyle = tower.fused ? '#2a1f3d' : '#1e293b';
-        ctx.fillRect(tower.c * t + 5, tower.r * t + 5, t - 10, t - 10);
-        ctx.strokeStyle = tower.def.color;
-        ctx.lineWidth = tower.fused ? 3 : 2;
-        ctx.strokeRect(tower.c * t + 5, tower.r * t + 5, t - 10, t - 10);
-
-        ctx.save();
-        ctx.translate(tower.x, tower.y);
-        ctx.rotate(tower.angle);
-        this.towerHead(ctx, tower);
-        ctx.restore();
-      }
-
-      this.towerBadges(ctx, tower, t);
+      if (game.selectedTower === tower) this.towerRange(ctx, tower);
+      this.drawTower(ctx, tower);
     }
+  },
+
+  towerRange(ctx, tower) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,.06)';
+    ctx.strokeStyle = 'rgba(255,255,255,.4)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(tower.x, tower.y, tower.stats.range, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  },
+
+  /* Desenho de uma torre, isolado para poder ser repetido por cima do véu
+   * da escolha de fusão. */
+  drawTower(ctx, tower) {
+    const t = CONFIG.tile;
+    const set = SpriteSheet.get(tower.typeKey);
+
+    if (set) {
+      // Sprite pintado: o disco de pedra é circular, então girar a peça
+      // inteira em direção ao alvo não quebra a leitura da base.
+      const size = (t * CONFIG.spriteOverflow) / set.discRatio;
+      ctx.save();
+      ctx.translate(tower.x, tower.y);
+      // angleOffset corrige a arte que aponta para cima em vez da direita.
+      ctx.rotate(tower.angle + (set.angleOffset || 0));
+      ctx.drawImage(set.images[this.spriteFrame(tower, set)], -size / 2, -size / 2, size, size);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = tower.fused ? '#2a1f3d' : '#1e293b';
+      ctx.fillRect(tower.c * t + 5, tower.r * t + 5, t - 10, t - 10);
+      ctx.strokeStyle = tower.def.color;
+      ctx.lineWidth = tower.fused ? 3 : 2;
+      ctx.strokeRect(tower.c * t + 5, tower.r * t + 5, t - 10, t - 10);
+
+      ctx.save();
+      ctx.translate(tower.x, tower.y);
+      ctx.rotate(tower.angle);
+      this.towerHead(ctx, tower);
+      ctx.restore();
+    }
+
+    this.towerBadges(ctx, tower, t);
+  },
+
+  /* Escolha da parceira de fusão.
+   *
+   * O tabuleiro inteiro recebe um véu escuro e só a torre de origem e as
+   * candidatas são redesenhadas por cima, com a cor natural. É a diferença
+   * entre "descubra quais servem" e "estas servem" -- com a fusão agora
+   * aceitando qualquer torre do mapa, uma lista de texto não daria conta. */
+  fuseOverlay(ctx, game) {
+    const fp = game.fusePending;
+    if (!fp) return;
+    const t = CONFIG.tile;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(6, 9, 18, .72)';
+    ctx.fillRect(0, 0, CONFIG.boardW, CONFIG.boardH);
+    ctx.restore();
+
+    // Torre de origem: contorno branco, sem pulsar, para nao competir.
+    this.drawTower(ctx, fp.tower);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(230,236,255,.85)';
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(fp.tower.c * t + 2, fp.tower.r * t + 2, t - 4, t - 4);
+    ctx.restore();
+
+    const pulso = 0.55 + 0.45 * Math.sin(game.elapsed * 7);
+    for (const alvo of fp.partners) {
+      this.drawTower(ctx, alvo);
+      ctx.save();
+      ctx.globalAlpha = pulso;
+      ctx.strokeStyle = '#fde047';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(alvo.c * t + 2, alvo.r * t + 2, t - 4, t - 4);
+      ctx.restore();
+
+      // Linha ligando origem e candidata: diz de onde para onde a fusao vai.
+      ctx.save();
+      ctx.globalAlpha = 0.30 + pulso * 0.25;
+      ctx.strokeStyle = fp.def.color;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([7, 7]);
+      ctx.lineDashOffset = -game.elapsed * 26;
+      ctx.beginPath();
+      ctx.moveTo(fp.tower.x, fp.tower.y);
+      ctx.lineTo(alvo.x, alvo.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.save();
+    ctx.fillStyle = '#e6ecff';
+    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Escolha a torre para fundir em ' + fp.def.name,
+                 CONFIG.boardW / 2, 28);
+    ctx.fillStyle = '#8fa0c7';
+    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.fillText('toque em qualquer outro lugar para cancelar', CONFIG.boardW / 2, 48);
+    ctx.restore();
   },
 
   /* O ciclo de tiro do sprite sai da recarga que a torre já controla:

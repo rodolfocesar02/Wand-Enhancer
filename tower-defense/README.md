@@ -126,9 +126,22 @@ um alvo específico, mas é a única que não afunda contra o afixo errado.
 
 ## Fusão
 
-Duas torres **nível 3 adjacentes** com receita válida viram uma torre nova. A
-fundida ocupa a célula da selecionada e **libera a outra** — o labirinto muda
-junto, então fundir também é uma decisão de terreno.
+Duas torres **nível 3 com receita válida** viram uma torre nova, **em qualquer
+lugar do tabuleiro**. A fundida ocupa a célula da selecionada e **libera a
+outra** — o labirinto muda junto, então fundir também é uma decisão de terreno.
+
+![O tabuleiro escurecido e só as torres compatíveis acesas](docs/fusao.png)
+
+Segure a torre (ou botão direito) para abrir o menu, escolha a **receita**, e o
+tabuleiro escurece deixando acesas só as torres que servem. A parceira é
+escolhida no mapa, não numa lista: o jogador precisa ver **onde** ela está,
+porque a célula liberada muda o labirinto.
+
+A primeira versão exigia que as duas fossem **vizinhas**, e isso estava errado.
+A restrição soa como profundidade, mas o jogador posiciona torre em função do
+caminho, não de receita — exigir que o par certo caia lado a lado é pedir
+coincidência, e a mecânica quase nunca aparecia. Sem a adjacência ela continua
+sendo uma escolha de terreno, só que uma escolha de verdade em vez de um sorteio.
 
 | Receita | Resultado |
 |---|---|
