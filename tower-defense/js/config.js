@@ -274,12 +274,16 @@ const TOWER_TYPES = {
 
 /* ------------------------------------------------------------- fusoes ---- */
 
-/* Receitas curadas: 6 das 15 combinacoes possiveis. Exigem duas torres nivel 3
- * adjacentes. A torre fundida ocupa a celula alvo e LIBERA a outra celula --
- * o labirinto muda, entao fundir e tambem uma decisao de terreno.
+/* Receitas curadas: 9 das 15 combinacoes possiveis. Exigem duas torres nivel 3
+ * em QUALQUER lugar do tabuleiro -- a exigencia de adjacencia era minha e
+ * estava errada. A torre fundida ocupa a celula alvo e LIBERA a outra celula,
+ * entao o labirinto muda e fundir e tambem uma decisao de terreno.
  *
  * Regra de balanceamento, medida e nao chutada: o DPS da torre fundida fica
- * entre 80% e 92% da SOMA das duas torres nivel 3 que ela consome. Nao pode
+ * entre 80% e 92% da SOMA das duas torres nivel 3 que ela consome -- soma das
+ * MELHORES pontas de evolucao de cada uma, nao da media delas. Contra a media
+ * as razoes dao 1,07 a 1,38, o que parece violar a regra e nao viola: e o
+ * denominador errado. As nove medem hoje 0,802 a 0,907. Nao pode
  * ser mais que isso, senao fundir vira obrigatorio e as 6 torres viram
  * decoracao; nao pode ser menos, senao fundir vira armadilha e a mecanica
  * inteira e codigo morto.
