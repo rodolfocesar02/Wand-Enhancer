@@ -207,8 +207,12 @@ canvas {
   border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; flex: none;
 }
 
-.dock-controls { display: grid; grid-template-columns: 1fr auto auto auto; gap: 7px; }
+.dock-controls { display: grid; grid-template-columns: 1fr auto auto auto auto; gap: 7px; }
 .dock-controls button { padding: 10px 13px; }
+
+/* O botão do medo é um interruptor, não uma ação: quando ligado ele fica
+ * aceso, para que o jogador saiba em qual dos dois jogos está. */
+#btn-medo.selected { border-color: #38bdf8; background: #10304a; color: #bae6fd; }
 
 #hint { margin: 0 2px; color: var(--muted); font-size: 12.5px; min-height: 18px; flex: none; }
 
@@ -256,7 +260,8 @@ button.arming { background: #7f1d3a; border-color: #f43f5e; color: var(--text); 
   .shop-chip { font-size: 12.5px; padding: 8px 10px; flex: 1 1 calc(50% - 4px); }
   .chip-key { display: none; }
   .dock-controls { grid-template-columns: 1fr auto auto; }
-  #btn-quit { grid-column: 1 / -1; }
+  #btn-medo { grid-column: 1 / 3; }
+  #btn-quit { grid-column: 3 / -1; }
   #hint { font-size: 11.5px; }
   .menu-head h1 { font-size: 22px; }
 }
