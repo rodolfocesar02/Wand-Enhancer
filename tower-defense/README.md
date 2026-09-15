@@ -34,6 +34,79 @@ inimigo já em campo — sem rota até a saída, a construção é recusada e de
 As torres também usam o mapa de distâncias para mirar: o alvo é sempre o inimigo
 **mais adiantado** dentro do alcance, ou seja, o que está mais perto de vazar.
 
+## O inimigo tem medo
+
+Até aqui a rota só mudava quando o jogador **construía**. Com o medo ligado, ela
+muda também quando o jogador **atira**.
+
+O BFS vira um Dijkstra: cada célula tem um custo, e o custo sobe com o dano que
+já foi causado ali. A rota deixa de ser a mais curta e passa a ser a **mais
+barata**. Um corredor onde muita coisa morreu fica caro de atravessar, e o campo
+de fluxo desvia dele sozinho.
+
+![Duas rotas na mesma onda](docs/medo-rotas.png)
+
+Na imagem: o vermelho é o perigo acumulado. A linha laranja é a rota dos afoitos,
+que cortam reto pelo corredor. A azul é a dos cautelosos, que contornam por
+baixo — e há um Bruxo de fato andando por ela.
+
+**Três campos, não um por inimigo.** Rota individual por monstro destruiria a
+legibilidade sem acrescentar decisão nenhuma. Cada tipo pertence a uma classe de
+sensibilidade, e cada classe tem seu campo de fluxo:
+
+| Classe | Inimigos | Comportamento |
+|---|---|---|
+| Afoito | Veloz, Tanque | quase ignora o perigo, corta reto |
+| Comum | Grunt | desvia do óbvio |
+| Cauteloso | Bruxo, Chefe | dá voltas grandes para não passar perto |
+
+**Perigo vem de dano causado, não de área de torre.** Uma torre que nunca atirou
+não aparece no campo. É isso que dá sentido ao *modo silencioso*: silenciar a
+torre a apaga do mapa mental do inimigo, e ela pode ser reativada depois que a
+onda já se comprometeu com o corredor — ao custo de 0,8 s de aquecimento.
+
+A consequência de projeto é a inversão que faltava: **empilhar dano no mesmo
+ponto passa a ser autodestrutivo**, porque o killbox expulsa a própria comida.
+Surge um papel novo para torre fraca — *cerca*, que mal mata, só encarece um
+caminho que você não quer que usem.
+
+### O que foi medido (e o que quebrou no caminho)
+
+Três erros meus que só a medição pegou:
+
+1. **Normalizar o perigo pelo máximo deixava o campo inerte.** A rota divergia em
+   0–3% das amostras mesmo com 250 mil de dano no mapa. A distribuição é pontuda:
+   a célula onde os inimigos morrem leva uma ordem de grandeza mais dano que o
+   resto do corredor, então dividir por ela fazia o corredor inteiro parecer
+   seguro. A escala passou a ser o **percentil 70** das células que já viram dano.
+2. **O `Float32Array` do Dijkstra quebrava a remoção preguiçosa.** O valor gravado
+   em `dist` era arredondado e ficava menor que o da fila, então nós válidos eram
+   descartados e o campo não chegava na entrada. Falha silenciosa — só apareceu
+   porque o teste cobrava que toda classe tivesse rota até a saída.
+3. **Sem teto, a mecânica virava esteira.** O bot de killbox caía da onda 17 para
+   9 e não se recuperava nem re-mirando: cada torre nova empurrava a rota de
+   novo e ele nunca conseguia concentrar dano em lugar nenhum. O chefe contornava
+   a defesa inteira, toda vez. Daí o **orçamento de desvio**: a rota com medo não
+   pode passar de 1,25× a rota curta. O inimigo evita o que cabe na paciência
+   dele e depois encara. Tem medo, não tem liberdade.
+
+Efeito no balanceamento, com 6 variantes de bot por configuração:
+
+| Estratégia | Sem medo | Com medo |
+|---|---|---|
+| Labirinto (fecha o corredor) | 21 / 25 com 1 vida / 25 com 36 vidas | **idêntico** |
+| Killbox em tabuleiro aberto, começo | onda 18,3 | onda 15,3 |
+| Killbox em tabuleiro aberto, meio | onda 20,8 | onda 14,5 |
+| Killbox em tabuleiro aberto, tudo destravado | 25 com 35,8 vidas | 25 com 35,8 vidas |
+
+Quem faz labirinto não sente nada: sem rota alternativa, não há para onde fugir.
+Quem concentra tudo num ponto e deixa o tabuleiro aberto perde cerca de 3 ondas —
+e é exatamente essa a estratégia que o medo existe para punir.
+
+O medo fica atrás de `CONFIG.medo` e tem botão no dock e tecla `M`, porque uma
+mecânica que muda o jogo inteiro precisa poder ser comparada ligada e desligada
+na mesma partida.
+
 ## Duas escolas de dano
 
 Todo dano é **físico** (amarelo) ou **mágico** (roxo), e cada inimigo tem
@@ -328,6 +401,8 @@ expedições** para o arco completo.
 | Toque longo | Abrir o menu da torre (evoluir, fundir, vender) |
 | `Q` `W` `E` `R` | Lançar magia |
 | `N` | Chamar a próxima onda |
+| `M` | Ligar / desligar o medo |
+| `X` | Silenciar / reativar a torre selecionada |
 | `Espaço` | Pausar / retomar |
 | `Esc` / botão direito | Cancelar seleção |
 
@@ -344,7 +419,8 @@ js/sprites.js       sprites pintados das torres, em data URI
 js/mobs.js          sprites pintados dos inimigos, com tintura por afixo
 js/maps.js          os 3 mapas
 js/meta.js          XP, desbloqueios e persistência em localStorage
-js/grid.js          grid, BFS e campo de fluxo
+js/grid.js          grid, Dijkstra e campos de fluxo (neutro e por classe de medo)
+js/perigo.js        campo de medo: perigo por célula, classes e orçamento de desvio
 js/damage.js        resolução de dano físico e mágico
 js/enemy.js         inimigos, afixos e níveis
 js/tower.js         torres, mira, evolução ramificada e fusão

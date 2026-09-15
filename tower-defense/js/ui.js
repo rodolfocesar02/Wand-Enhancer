@@ -33,6 +33,8 @@ const UI = {
       shop: document.getElementById('shop-list'),
 
       menu: document.getElementById('tower-menu'),
+      tmMute: document.getElementById('tm-mute'),
+      medo: document.getElementById('btn-medo'),
       tmName: document.getElementById('tm-name'),
       tmClose: document.getElementById('tm-close'),
       tmSplit: document.getElementById('tm-split'),
@@ -70,6 +72,8 @@ const UI = {
     this.el.pause.addEventListener('click', () => g.togglePause());
     this.el.speed.addEventListener('click', () => g.cycleSpeed());
     this.el.tmSell.addEventListener('click', () => g.sellSelected());
+    this.el.tmMute.addEventListener('click', () => g.toggleMute(g.menuTower));
+    this.el.medo.addEventListener('click', () => g.toggleMedo());
     this.el.tmClose.addEventListener('click', () => g.closeMenu());
     this.armTwice(this.el.quit, 'Abandonar', 'Abandonar mesmo? Clique de novo', () => g.endRun(false));
     this.el.overlayBtn.addEventListener('click', () => g.toMenu());
@@ -235,6 +239,12 @@ const UI = {
     }
 
     this.syncFusion(t);
+    e.tmMute.textContent = t.mudo ? 'Voltar a atirar' : 'Silenciar (emboscada)';
+    e.tmMute.className = t.mudo ? 'primary' : '';
+    e.tmMute.title = t.mudo
+      ? 'Silenciosa: não atira e não aparece no campo de medo. Volta a atirar após ' +
+        CONFIG.aquecimento + 's de aquecimento.'
+      : 'Para de atirar. Sem tiro não há dano, sem dano não há perigo — a rota passa por cima dela sem desconfiar.';
     e.tmSell.textContent = 'Vender (+' + t.sellValue + ')';
     this.placeMenu(t);
   },
@@ -368,6 +378,8 @@ const UI = {
     e.pause.textContent = g.paused ? 'Retomar' : 'Pausar';
     e.pause.disabled = !playing;
     e.speed.textContent = g.speed + 'x';
+    e.medo.textContent = 'Medo: ' + (CONFIG.medo ? 'on' : 'off');
+    e.medo.classList.toggle('selected', !!CONFIG.medo);
 
     this.tickHint();
   },
