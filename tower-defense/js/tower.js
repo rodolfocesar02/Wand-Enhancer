@@ -41,6 +41,8 @@ class Tower {
     this.fullCooldown = 1;
     this.angle = -Math.PI / 2;
     this.recoil = 0;
+    this.mudo = false;      // modo silencioso: mira, mas nao atira nem marca perigo
+    this.aquecer = 0;       // atrito ao voltar a atirar
     this.invested = this.def.cost;
     this.x = (c + 0.5) * tile;
     this.y = (r + 0.5) * tile;
@@ -141,6 +143,7 @@ class Tower {
 
   update(dt, enemies, projectiles, rateBonus, mods, game) {
     if (this.cooldown > 0) this.cooldown -= dt;
+    if (this.aquecer > 0) this.aquecer -= dt;
     if (this.recoil > 0) this.recoil -= dt * 5;
 
     const target = this.pickTarget(enemies);
@@ -148,6 +151,10 @@ class Tower {
 
     // A torre gira em direcao ao alvo mesmo sem poder atirar.
     this.angle = Math.atan2(target.y - this.y, target.x - this.x);
+
+    // Silenciosa continua mirando -- so nao dispara. Sem tiro nao ha dano,
+    // sem dano nao ha perigo, e a rota passa por cima dela sem desconfiar.
+    if (this.mudo || this.aquecer > 0) return;
     if (this.cooldown > 0) return;
 
     this.cooldown = this.stats.cooldown / (1 + (rateBonus || 0));

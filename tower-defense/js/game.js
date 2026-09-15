@@ -18,6 +18,10 @@ class Game {
   resetRunState(map) {
     this.map = map;
     this.grid = new Grid(map);
+    // O grid puxa o campo de custo daqui a cada recalculo. Com o medo
+    // desligado devolve null e os campos de fluxo voltam a ser o BFS antigo.
+    this.grid.custoFn = () => Perigo.campo();
+    this.medoRelogio = 0;
     this.towers = [];
     this.towerAt = new Map();
     this.enemies = [];
@@ -76,6 +80,8 @@ class Game {
     this.spellbook = new SpellBook(this.unlockedSpells, bonus.spellCdMul);
 
     Trail.reset();
+    Perigo.reset();
+    this.grid.computeFear();
 
     this.screen = 'playing';
     this.restTimer = CONFIG.wavePause;
@@ -138,8 +144,10 @@ class Game {
     if (this.buildCache.has(cacheKey)) return this.buildCache.get(cacheKey);
 
     const occupied = this.enemies.map(e => e.cell);
+    this.grid.probing = true;
     const ok = this.grid.tryBlock(c, r, CELL.TORRE, occupied);
     if (ok) this.grid.unblock(c, r);
+    this.grid.probing = false;
 
     this.buildCache.set(cacheKey, ok);
     return ok;
@@ -319,6 +327,10 @@ class Game {
       this.notifyCell('+' + bonus + ' antecipação', this.grid.spawn.c + 2, this.grid.spawn.r, '#fbbf24');
     }
 
+    // O esquecimento do medo e por onda, nao por segundo: assim o ritmo com
+    // que a rota volta ao corredor antigo nao muda com a velocidade do jogo.
+    Perigo.decair();
+
     this.wave += 1;
     this.restTimer = 0;
     this.spawnQueue = Waves.build(this.wave);
@@ -339,6 +351,18 @@ class Game {
     if (this.screen !== 'playing' || this.paused) return;
 
     this.spellbook.update(dt);
+
+    // O campo de medo muda a cada tiro. Recalcular a todo quadro seria
+    // desperdicio e faria a rota tremer; a cada segundo a mudanca de rota
+    // parece uma decisao, e nao uma falha.
+    if (Perigo.ligado() && Perigo.sujo) {
+      this.medoRelogio += dt;
+      if (this.medoRelogio >= Perigo.INTERVALO) {
+        this.medoRelogio = 0;
+        Perigo.sujo = false;
+        this.grid.computeFear();
+      }
+    }
 
     if (this.rateTimer > 0) {
       this.rateTimer -= dt;
@@ -445,6 +469,11 @@ class Game {
   onDamage(enemy, dealt, packet) {
     if (dealt < 1) return;
 
+    // O medo se alimenta daqui: a celula onde o inimigo apanhou fica mais cara
+    // de atravessar. Uma torre que nunca atirou nao aparece no campo -- e isso
+    // que da sentido ao modo silencioso.
+    Perigo.marcar(enemy.x, enemy.y, dealt);
+
     // A sensação de acerto vem de movimento, não de detalhe de sprite: por
     // isso faísca e tranco valem em qualquer escala, inclusive a 26px.
     const school = Damage.dominant(packet);
@@ -550,6 +579,32 @@ class Game {
     this.fusePending = null;
     this.spellbook.pending = null;
     this.emit();
+  }
+
+  /* Liga e desliga o medo em partida, para poder comparar sem trocar de
+   * build. Recalcular na hora e obrigatorio: com o medo desligado os campos
+   * de classe somem e todo mundo volta ao fluxo neutro no mesmo quadro. */
+  toggleMedo() {
+    CONFIG.medo = !CONFIG.medo;
+    this.grid.computeFear();
+    this.notifyCell(CONFIG.medo ? 'Medo ligado' : 'Medo desligado',
+                    this.grid.spawn.c + 3, this.grid.spawn.r, '#38bdf8');
+    this.emit();
+    return CONFIG.medo;
+  }
+
+  /* Modo silencioso: a torre para de atirar, entao para de marcar perigo e
+   * some do campo. E a emboscada -- ligada depois que os inimigos ja se
+   * comprometeram com o corredor. */
+  toggleMute(tower) {
+    const t = tower || this.selectedTower;
+    if (!t) return false;
+    t.mudo = !t.mudo;
+    if (!t.mudo) t.aquecer = CONFIG.aquecimento;
+    this.notifyCell(t.mudo ? 'Silenciosa' : 'Ativa', t.c, t.r,
+                    t.mudo ? '#94a3b8' : '#4ade80');
+    this.emit();
+    return t.mudo;
   }
 
   togglePause() {

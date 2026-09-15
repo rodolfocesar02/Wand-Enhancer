@@ -23,6 +23,7 @@ const Renderer = {
     ctx.clearRect(0, 0, CONFIG.width, CONFIG.height);
     this.terrain(ctx, game);
     Trail.draw(ctx);
+    this.perigo(ctx, game);
     this.path(ctx, game);
     this.endpoints(ctx, game);
     this.walls(ctx, game);
@@ -99,13 +100,93 @@ const Renderer = {
     }
   },
 
+  /* Mapa de calor do medo.
+   *
+   * Nao e enfeite. Se o jogador nao VE onde o perigo acumulou, a rota foge do
+   * killbox sem explicacao e o jogo so parece injusto. Manchas radiais em vez
+   * de quadrados: o campo e borrado, entao desenha-lo quadriculado mentiria
+   * sobre a resolucao da mecanica. */
+  perigo(ctx, game) {
+    if (!Perigo.ligado()) return;
+
+    if (!this._quente) {
+      const tam = 96;
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = tam;
+      const c = cv.getContext('2d');
+      const g = c.createRadialGradient(tam / 2, tam / 2, 0, tam / 2, tam / 2, tam / 2);
+      g.addColorStop(0, 'rgba(248,68,52,1)');
+      g.addColorStop(0.5, 'rgba(230,60,46,0.55)');
+      g.addColorStop(1, 'rgba(200,50,40,0)');
+      c.fillStyle = g;
+      c.fillRect(0, 0, tam, tam);
+      this._quente = cv;
+    }
+
+    const t = CONFIG.tile;
+    const raio = t * 0.92;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (let r = 0; r < CONFIG.rows; r++) {
+      for (let c = 0; c < CONFIG.cols; c++) {
+        const n = Perigo.nivel(c, r);
+        if (n < 0.05) continue;
+        ctx.globalAlpha = Math.min(0.5, n * 0.5);
+        ctx.drawImage(this._quente, (c + 0.5) * t - raio, (r + 0.5) * t - raio, raio * 2, raio * 2);
+      }
+    }
+    ctx.restore();
+  },
+
+  /* Rota prevista.
+   *
+   * Com o medo ligado existe uma rota POR CLASSE de sensibilidade, e desenhar
+   * as tres sempre viraria poluicao. Entao: enquanto as classes concordam, sai
+   * a linha azul de sempre; assim que uma diverge, cada rota ganha a cor da
+   * sua classe. A cor so aparece quando ha o que dizer. */
   path(ctx, game) {
-    const points = game.grid.previewPath(CONFIG.tile);
-    if (points.length < 2) return;
+    const classes = Perigo.ligado() ? ['cauteloso', 'normal', 'afoito'] : [null];
+    const rotas = [];
+
+    for (const nome of classes) {
+      const pts = game.grid.previewPath(CONFIG.tile, nome);
+      if (pts.length < 2) continue;
+      const sig = pts.map(p => p.x + '_' + p.y).join('|');
+      const igual = rotas.find(r => r.sig === sig);
+      if (igual) { igual.nomes.push(nome); continue; }
+      rotas.push({ sig: sig, pts: pts, nomes: [nome] });
+    }
+    if (rotas.length === 0) return;
+
+    const unica = rotas.length === 1;
+    for (const rota of rotas) {
+      const meta = unica ? null : MEDO_META[rota.nomes[0]];
+      this.rota(ctx, game, rota.pts, meta);
+    }
+
+    if (!unica) {
+      ctx.save();
+      ctx.font = '700 9px system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      let y = 12;
+      for (const rota of rotas) {
+        const meta = MEDO_META[rota.nomes[0]];
+        ctx.fillStyle = meta.color;
+        ctx.fillRect(6, y - 6, 8, 3);
+        ctx.fillText(rota.nomes.map(n => MEDO_META[n].label).join(' + '), 18, y);
+        y += 13;
+      }
+      ctx.restore();
+    }
+  },
+
+  rota(ctx, game, points, meta) {
+    const banda = meta ? this.rgba(meta.color, 0.2) : 'rgba(96,165,250,.26)';
+    const linha = meta ? this.rgba(meta.color, 0.85) : 'rgba(147,197,253,.5)';
 
     ctx.save();
-    ctx.strokeStyle = 'rgba(96,165,250,.26)';
-    ctx.lineWidth = 16;
+    ctx.strokeStyle = banda;
+    ctx.lineWidth = meta ? 11 : 16;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -113,12 +194,17 @@ const Renderer = {
     for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
     ctx.stroke();
 
-    ctx.strokeStyle = 'rgba(147,197,253,.5)';
+    ctx.strokeStyle = linha;
     ctx.lineWidth = 2;
     ctx.setLineDash([9, 13]);
     ctx.lineDashOffset = -game.elapsed * 34;
     ctx.stroke();
     ctx.restore();
+  },
+
+  rgba(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
   },
 
   endpoints(ctx, game) {
@@ -237,6 +323,11 @@ const Renderer = {
     const t = CONFIG.tile;
     const set = SpriteSheet.get(tower.typeKey);
 
+    // Silenciosa precisa se ler de longe, no meio da onda: apagar o sprite
+    // inteiro comunica mais rapido que qualquer simbolo no canto.
+    ctx.save();
+    if (tower.mudo) ctx.globalAlpha = 0.42;
+
     if (set) {
       // Sprite pintado: o disco de pedra é circular, então girar a peça
       // inteira em direção ao alvo não quebra a leitura da base.
@@ -260,8 +351,42 @@ const Renderer = {
       this.towerHead(ctx, tower);
       ctx.restore();
     }
+    ctx.restore();
 
     this.towerBadges(ctx, tower, t);
+    this.towerMute(ctx, tower, t);
+  },
+
+  /* Marca da torre silenciosa e o aquecimento ao voltar a atirar. */
+  towerMute(ctx, tower, t) {
+    if (tower.mudo) {
+      const x = tower.c * t + t - 13, y = tower.r * t + t - 13;
+      ctx.save();
+      ctx.fillStyle = 'rgba(8,11,20,.8)';
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x - 4, y - 4);
+      ctx.lineTo(x + 4, y + 4);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
+    if (tower.aquecer > 0) {
+      const frac = 1 - tower.aquecer / CONFIG.aquecimento;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(74,222,128,.9)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(tower.x, tower.y, t * 0.42, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
   },
 
   /* Escolha da parceira de fusão.
