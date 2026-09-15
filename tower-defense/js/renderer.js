@@ -24,7 +24,6 @@ const Renderer = {
     this.terrain(ctx, game);
     Trail.draw(ctx);
     this.perigo(ctx, game);
-    this.path(ctx, game);
     this.endpoints(ctx, game);
     this.walls(ctx, game);
     this.hover(ctx, game);
@@ -277,6 +276,16 @@ const Renderer = {
     if (game.selectedType) {
       const ok = game.canBuildAt(cell.c, cell.r);
       const def = TOWER_TYPES[game.selectedType];
+
+      // A estrada nao e desenhada permanentemente -- quem mostra por onde eles
+      // andam e a trilha pisada. Aqui aparece a rota que ESTA construcao
+      // criaria, que e quando a informacao vale alguma coisa.
+      if (ok) {
+        const rotas = game.rotaPrevista(cell.c, cell.r);
+        const unica = rotas.length === 1;
+        for (const rota of rotas) this.rota(ctx, game, rota.pts, unica ? null : MEDO_META[rota.nome]);
+      }
+
       ctx.save();
       ctx.globalAlpha = 0.35;
       ctx.fillStyle = ok ? def.color : '#ef4444';
@@ -321,6 +330,7 @@ const Renderer = {
    * da escolha de fusão. */
   drawTower(ctx, tower) {
     const t = CONFIG.tile;
+    if (!tower.pronta) { this.towerObra(ctx, tower, t); return; }
     const set = SpriteSheet.get(tower.typeKey);
 
     // Silenciosa precisa se ler de longe, no meio da onda: apagar o sprite
@@ -377,6 +387,43 @@ const Renderer = {
     ctx.fillRect(x - 1, y - 1, w + 2, 5);
     ctx.fillStyle = frac > 0.5 ? '#4ade80' : frac > 0.22 ? '#fbbf24' : '#f87171';
     ctx.fillRect(x, y, w * frac, 3);
+  },
+
+  /* Torre em obra: andaime. Precisa se ler como "ainda nao e parede", porque
+   * e exatamente isso que ela nao e -- a rota passa por cima dela. */
+  towerObra(ctx, tower, t) {
+    const x = tower.c * t, y = tower.r * t;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(12,17,30,.55)';
+    ctx.fillRect(x + 5, y + 5, t - 10, t - 10);
+
+    ctx.strokeStyle = tower.def.color;
+    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.lineDashOffset = -this._clock * 18;
+    ctx.strokeRect(x + 5.5, y + 5.5, t - 11, t - 11);
+    ctx.setLineDash([]);
+
+    // Arco de progresso: quanto falta para virar parede de verdade.
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(148,163,184,.35)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(tower.x, tower.y, t * 0.27, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = tower.def.color;
+    ctx.beginPath();
+    ctx.arc(tower.x, tower.y, t * 0.27, -Math.PI / 2, -Math.PI / 2 + tower.obraFrac * Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(230,236,255,.8)';
+    ctx.font = '700 8px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('OBRA', tower.x, y + t - 9);
+    ctx.restore();
   },
 
   /* Marca da torre silenciosa e o aquecimento ao voltar a atirar. */

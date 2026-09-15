@@ -177,6 +177,60 @@ serpentina chega inteira e ainda assim não fecha as 25 ondas.
 
 Tudo atrás de `CONFIG.medoPaciencia`.
 
+## Não existe estrada
+
+Nunca existiu — e isso vale dizer porque a linha tracejada enganava. O campo de
+fluxo é recalculado a cada torre construída; aquilo era um *desenho*, não um
+trilho. Agora nem o desenho existe.
+
+Quem mostra por onde eles andam é a **trilha pisada**, que emerge do tráfego
+real e é histórico, não plano. A previsão de rota aparece só quando serve: com
+uma torre na mão, sobre a célula onde ela cairia. Planejar continua possível;
+acreditar numa estrada que não existe, não.
+
+## A obra
+
+![Coluna em obra com a rota passando por dentro](docs/obra.png)
+
+Na imagem: três colunas da serpentina prontas à esquerda, oito torres em **OBRA**
+no meio — e a rota passando **por dentro** delas. Meio labirinto não é meio
+labirinto: é labirinto nenhum.
+
+A torre não nasce pronta. Enquanto está em obra ela **não bloqueia e não atira**.
+Não bloquear é a parte que faz a mecânica existir: se ela fechasse na hora e só
+demorasse a atirar, a serpentina apareceria instantânea e o único custo seria
+dano atrasado — o inimigo andaria o caminho longo de graça, que é o oposto do
+que se quer.
+
+O buraco que isso tampa: até aqui o labirinto custava ouro mas **não custava
+tempo**. Dava para montar a serpentina inteira no intervalo entre ondas, sem
+pressão nenhuma.
+
+**O tempo de obra é proporcional a quanto aquela torre alonga a rota**
+(`2,2s + 0,014 × ouro + 0,85s por passo acrescentado`). Uma torre que só
+acompanha a rota sai em três segundos; o tijolo que FECHA o caminho é obra
+grande. Num labirinto montado coluna por coluna, quem paga caro é sempre a
+última peça — a que fecha.
+
+Isso foi medido contra a alternativa óbvia. Aumentar o tempo de obra por igual é
+alavanca cega: a 2,5× o jogo inteiro desaba (zigue-zague da onda 20 para a 6,
+killbox de 13,7 para 10,2), porque penaliza *construir*, e não *alongar*.
+
+| Estratégia | Sem obra | Com obra |
+|---|---|---|
+| Zigue-zague | onda 21, rota 54 | onda 18, rota 47,7 |
+| Killbox, tabuleiro aberto | onda 14,5 | onda 14,7 |
+| Corredor curto | 21 / 25 com 1 vida / 25 com 36 vidas | **idêntico** |
+
+O killbox não sente nada, que é o ponto da mira: ele não alonga a rota.
+
+Validar a construção passou a olhar o tabuleiro **futuro**, com todas as obras em
+andamento já fechadas. Sem isso, duas obras validadas isoladamente poderiam selar
+o mapa juntas e a segunda só descobriria ao terminar — tarde demais para avisar.
+Testado com 104 construções simultâneas.
+
+Tudo atrás de `CONFIG.obra`.
+
 ## Duas escolas de dano
 
 Todo dano é **físico** (amarelo) ou **mágico** (roxo), e cada inimigo tem

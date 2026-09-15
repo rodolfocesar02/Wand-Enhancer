@@ -134,6 +134,8 @@ class Game {
     if (!this.grid.inBounds(c, r)) return false;
     if (this.grid.isReserved(c, r)) return false;
     if (this.grid.cellAt(c, r) !== CELL.LIVRE) return false;
+    // Torre em obra nao bloqueia a celula, mas ela esta ocupada mesmo assim.
+    if (this.towerAt.has(this.key(c, r))) return false;
 
     for (const e of this.enemies) {
       const cell = e.cell;
@@ -143,17 +145,92 @@ class Game {
     const cacheKey = this.key(c, r);
     if (this.buildCache.has(cacheKey)) return this.buildCache.get(cacheKey);
 
-    const occupied = this.enemies.map(e => e.cell);
-    this.grid.probing = true;
-    const ok = this.grid.tryBlock(c, r, CELL.TORRE, occupied);
-    if (ok) this.grid.unblock(c, r);
-    this.grid.probing = false;
-
+    const ok = this.validaFuturo(c, r);
     this.buildCache.set(cacheKey, ok);
     return ok;
   }
 
-  invalidateBuildCache() { this.buildCache.clear(); }
+  /* Valida a construcao contra o tabuleiro FUTURO: com todas as obras em
+   * andamento ja fechadas.
+   *
+   * Sem isso, duas obras validadas isoladamente poderiam selar o mapa juntas
+   * e a segunda so descobriria isso ao terminar -- tarde demais para avisar o
+   * jogador. Validando contra o futuro, terminar uma obra nunca pode fechar o
+   * labirinto. */
+  validaFuturo(c, r) {
+    const obras = [];
+    this.grid.probing = true;
+
+    for (const t of this.towers) {
+      if (t.pronta) continue;
+      const i = this.grid.idx(t.c, t.r);
+      if (this.grid.cells[i] !== CELL.LIVRE) continue;
+      this.grid.cells[i] = CELL.TORRE;
+      obras.push(i);
+    }
+
+    const ok = this.grid.tryBlock(c, r, CELL.TORRE, null);
+    if (ok) this.grid.unblock(c, r);
+
+    for (const i of obras) this.grid.cells[i] = CELL.LIVRE;
+    this.grid.probing = false;
+    this.grid.compute();
+    return ok;
+  }
+
+  invalidateBuildCache() { this.buildCache.clear(); this._rotaCache = null; }
+
+  /* Quantos passos esta construcao acrescenta na rota curta. E o que define o
+   * tamanho da obra: fechar o caminho e trabalho pesado, acompanhar a rota
+   * nao e. */
+  deltaRota(c, r) {
+    const antes = this.grid.passos(this.grid.flow);
+    if (antes < 0) return 0;
+
+    this.grid.probing = true;
+    const ok = this.grid.tryBlock(c, r, CELL.TORRE, null);
+    let depois = antes;
+    if (ok) { depois = this.grid.passos(this.grid.flow); this.grid.unblock(c, r); }
+    this.grid.probing = false;
+    this.grid.computeFear();
+
+    return depois < 0 ? 0 : Math.max(0, depois - antes);
+  }
+
+  /* Rota que existiria SE a torre fosse construida aqui.
+   *
+   * O tabuleiro nao tem mais estrada desenhada: quem mostra por onde eles
+   * andam e a trilha, que emerge do trafego real. Mas planejar sem nenhuma
+   * previsao seria construir no escuro, ainda mais com medo e paciencia em
+   * jogo. Entao a previsao aparece exatamente quando serve: com a torre na
+   * mao, sobre a celula onde ela cairia. */
+  rotaPrevista(c, r) {
+    const chave = c + ',' + r + ':' + this.towers.length;
+    if (this._rotaCache && this._rotaCache.chave === chave) return this._rotaCache.rotas;
+
+    const rotas = [];
+    this.grid.probing = true;
+    const ok = this.grid.tryBlock(c, r, CELL.TORRE, null);
+    this.grid.probing = false;
+
+    if (ok) {
+      this.grid.computeFear();
+      const vistas = new Set();
+      for (const nome of ['cauteloso', 'normal', 'afoito']) {
+        const pts = this.grid.previewPath(CONFIG.tile, nome);
+        if (pts.length < 2) continue;
+        const sig = pts.map(p => p.x + '_' + p.y).join('|');
+        if (vistas.has(sig)) continue;
+        vistas.add(sig);
+        rotas.push({ nome: nome, pts: pts });
+      }
+      this.grid.unblock(c, r);
+    }
+    this.grid.computeFear();
+
+    this._rotaCache = { chave: chave, rotas: rotas };
+    return rotas;
+  }
 
   build(typeKey, c, r) {
     const def = TOWER_TYPES[typeKey];
@@ -161,19 +238,36 @@ class Game {
 
     if (this.gold < def.cost) { this.notifyCell('Ouro insuficiente', c, r, '#f87171'); return false; }
 
-    const occupied = this.enemies.map(e => e.cell);
-    if (!this.canBuildAt(c, r) || !this.grid.tryBlock(c, r, CELL.TORRE, occupied)) {
+    if (!this.canBuildAt(c, r)) {
       this.notifyCell('Fecharia o caminho', c, r, '#f87171');
       return false;
     }
 
     const tower = new Tower(typeKey, c, r, CONFIG.tile);
+    if (CONFIG.obra) tower.alongarObra(this.deltaRota(c, r));
     this.towers.push(tower);
     this.towerAt.set(this.key(c, r), tower);
     this.gold -= def.cost;
+
+    // A celula so fecha quando a obra termina. Enquanto isso a rota curta
+    // continua aberta -- meio labirinto nao segura ninguem.
+    if (tower.pronta) this.fecharCelula(tower);
+
     this.invalidateBuildCache();
     this.notifyCell('-' + def.cost, c, r, '#fbbf24');
     this.emit();
+    return true;
+  }
+
+  /* Fecha a celula de uma obra terminada. Devolve false se algum inimigo vivo
+   * ficaria sem rota -- nesse caso a obra espera ele sair, o que e melhor que
+   * prender um monstro num bolso fechado. */
+  fecharCelula(tower) {
+    const occupied = this.enemies.map(e => e.cell);
+    for (const cell of occupied) if (cell.c === tower.c && cell.r === tower.r) return false;
+
+    if (!this.grid.tryBlock(tower.c, tower.r, CELL.TORRE, occupied)) return false;
+    this.invalidateBuildCache();
     return true;
   }
 
@@ -393,6 +487,15 @@ class Game {
     }
 
     for (const tower of this.towers) {
+      if (!tower.pronta) {
+        tower.obra -= dt;
+        if (tower.obra <= 0) {
+          tower.obra = 0;
+          if (!this.fecharCelula(tower)) tower.obra = 0.05;   // espera o inimigo sair
+          else { this.notifyCell('pronta', tower.c, tower.r, tower.def.color); this.emit(); }
+        }
+        continue;
+      }
       tower.update(dt, this.enemies, this.projectiles, this.rateBonus, this.damageMods, this);
     }
 

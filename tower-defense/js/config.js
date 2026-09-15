@@ -50,7 +50,33 @@ const CONFIG = {
   vidaBase: 195,
   vidaPorOuro: 3.6,
   reparoOnda: 0.5,
-  reparoCusto: 0.5          // ouro por ponto de vida, no reparo manual
+  reparoCusto: 0.5,         // ouro por ponto de vida, no reparo manual
+
+  /* Obra: a torre nao nasce pronta.
+   *
+   * Enquanto esta em obra ela NAO BLOQUEIA e NAO ATIRA. Isso e o ponto: ate
+   * agora o labirinto custava ouro mas nao custava tempo -- dava para montar
+   * a serpentina inteira no intervalo entre ondas, sem pressao nenhuma. Com
+   * obra, meio labirinto nao e meio labirinto: e labirinto nenhum, porque a
+   * rota curta continua aberta enquanto a parede nao fecha.
+   *
+   * Nao bloquear e a parte que faz a mecanica existir. Se a torre bloqueasse
+   * na hora e so demorasse a atirar, a serpentina apareceria instantanea e o
+   * unico custo seria dano atrasado -- o inimigo andaria o caminho longo de
+   * graca, que e o oposto do que se quer. */
+  obra: true,
+  obraBase: 2.2,
+  obraPorOuro: 0.014,       // Arqueira ~2,9s; Balista ~4,2s
+
+  /* Segundos de obra por PASSO que a torre acrescenta na rota.
+   *
+   * Aumentar o tempo de obra por igual e alavanca cega -- medido: a 2,5x o
+   * jogo inteiro desaba (zigue-zague cai da onda 20 para a 6, killbox de 13,7
+   * para 10,2), porque penaliza construir, e nao alongar. Este numero mira a
+   * coisa certa: a torre que so acompanha a rota sai rapido, e o tijolo que
+   * FECHA o caminho e obra grande. Num labirinto montado coluna por coluna,
+   * quem paga caro e sempre a ultima peca -- a que fecha. */
+  obraPorPasso: 0.85
 };
 
 /* O canvas é mais alto que o tabuleiro: a faixa de baixo carrega as magias,

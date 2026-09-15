@@ -48,6 +48,9 @@ class Tower {
     this.y = (r + 0.5) * tile;
     this.destruida = false;
     this.golpe = 0;          // clarao de quando a torre apanha
+    // Obra: nao bloqueia o caminho nem atira ate terminar.
+    this.obraTotal = CONFIG.obra ? CONFIG.obraBase + this.def.cost * CONFIG.obraPorOuro : 0;
+    this.obra = this.obraTotal;
     this.refresh();
     this.hp = this.maxHp;
   }
@@ -84,6 +87,15 @@ class Tower {
   }
 
   get stats() { return this._stats; }
+
+  /* Obra maior para quem alonga mais a rota. Chamado uma vez, na construcao. */
+  alongarObra(passos) {
+    this.obraTotal += passos * CONFIG.obraPorPasso;
+    this.obra = this.obraTotal;
+  }
+
+  get pronta() { return this.obra <= 0; }
+  get obraFrac() { return this.obraTotal > 0 ? 1 - this.obra / this.obraTotal : 1; }
 
   /* Vida sai do investimento: o tijolo de 50 de ouro e frageis de proposito, e
    * a torre que voce evoluiu aguenta. Nao existe "parede de graca". */
@@ -170,6 +182,7 @@ class Tower {
   }
 
   update(dt, enemies, projectiles, rateBonus, mods, game) {
+    if (!this.pronta) return;   // em obra: nao mira, nao atira
     if (this.cooldown > 0) this.cooldown -= dt;
     if (this.aquecer > 0) this.aquecer -= dt;
     if (this.recoil > 0) this.recoil -= dt * 5;
