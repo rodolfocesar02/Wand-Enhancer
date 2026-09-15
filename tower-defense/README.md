@@ -107,6 +107,76 @@ O medo fica atrás de `CONFIG.medo` e tem botão no dock e tecla `M`, porque uma
 mecânica que muda o jogo inteiro precisa poder ser comparada ligada e desligada
 na mesma partida.
 
+## O inimigo tem paciência
+
+O medo decide **por onde** o inimigo anda. Ele não tem resposta para quem apaga
+a escolha — e apagar a escolha é a estratégia dominante do gênero:
+
+> Fecho tudo com torres, deixo um caminho só, e faço um zigue-zague gigante.
+> Eles nem chegam na metade. Fecho as 25 ondas sem evoluir nada.
+
+Isso estava certo, e medido: no mesmo nível de desbloqueio a serpentina vencia
+**6 de 6** partidas com rota de 54 passos, enquanto o killbox de tabuleiro aberto
+perdia 6 de 6. E sem evoluir nada — 36 Arqueiras nível 1 usadas como tijolo.
+
+O motivo é estrutural. Uma Arqueira de 50 de ouro dá duas coisas: dano, e **+2
+células de rota para todo inimigo, para sempre**. A segunda vale mais, e ela
+**compõe** — cada célula a mais multiplica o valor de todas as outras torres.
+Nenhuma mecânica de rota compete com isso. O preço tinha que cair sobre o
+comprimento em si.
+
+![Tanque abrindo buraco na serpentina](docs/paciencia.png)
+
+**A folga.** Cada célula sabe duas distâncias até a saída: a real e a que
+existiria num tabuleiro sem torres. A razão entre elas é a folga — 1,0 é rota
+direta, 4,7 é o jogador fazendo o inimigo andar quase cinco vezes mais. Quando a
+folga passa da paciência do inimigo, ele **para de andar e quebra a parede na
+frente dele**, escolhendo a vizinha que fica mais perto da saída. Rocha do mapa
+não quebra.
+
+A folga é **local**, não global: ela dispara no pior aperto do labirinto, e não
+onde o inimigo já andou o desvio inteiro.
+
+| Inimigo | Paciência | Ataque | Na prática |
+|---|---|---|---|
+| Veloz | 9,0 | 5 | nunca cava |
+| Grunt | 6,8 | 10 | nunca cava |
+| Bruxo | 5,6 | 22 | cava em labirinto extremo |
+| Tanque | 3,6 | 60 | **quebrador** |
+| Chefe | 3,0 | 170 | **quebrador** |
+
+Não é todo mundo que quebra, e isso é o ponto: o lixo da onda continua fazendo o
+percurso inteiro, então o labirinto funciona contra ele. Quem cobra o preço do
+comprimento é o Tanque e o Chefe. Sua serpentina segura as ondas comuns e apanha
+nas ondas de Tanque — ela deixa de ser construção definitiva e vira uma coisa que
+você **mantém**.
+
+Torres ganharam vida, proporcional ao que foi investido nelas (`195 + 3,6 × ouro`).
+O tijolo barato é frágil de propósito: é por isso que "cerca" vira um papel de
+verdade — parede precisa de vida, não de dano. Metade da vida volta em cada
+intervalo entre ondas, e o resto custa ouro no botão **Reparar**, o que cria a
+decisão que faltava: consertar o tijolo da frente ou comprar dano novo.
+
+### O efeito medido
+
+Três estratégias, 6 variantes de bot cada, mesmo nível de desbloqueio:
+
+| Estratégia | Antes | Depois |
+|---|---|---|
+| Zigue-zague (rota 54) | onda 25, **6/6 vitórias** | onda 21, **0/6** |
+| Killbox, tabuleiro aberto | onda 14,5 | onda 14,5 |
+| Corredor curto (paredes sem alongar) | 21 / 25 com 1 vida / 25 com 36 vidas | **idêntico** |
+
+O zigue-zague continua sendo a melhor estratégia do jogo — só deixou de ser a
+única. E o corredor curto não é atacado: folga 1,08 não incomoda ninguém.
+
+A primeira calibragem errou para o outro lado: com paciência 1,8 no Tanque o
+zigue-zague despencava para a onda 10, ficando *pior* que não fazer labirinto.
+Isso não equilibra, só inverte a dominância. O dobro disso é o ponto onde a
+serpentina chega inteira e ainda assim não fecha as 25 ondas.
+
+Tudo atrás de `CONFIG.medoPaciencia`.
+
 ## Duas escolas de dano
 
 Todo dano é **físico** (amarelo) ou **mágico** (roxo), e cada inimigo tem

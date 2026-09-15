@@ -330,6 +330,7 @@ class Game {
     // O esquecimento do medo e por onda, nao por segundo: assim o ritmo com
     // que a rota volta ao corredor antigo nao muda com a velocidade do jogo.
     Perigo.decair();
+    this.repararTorres(CONFIG.reparoOnda);
 
     this.wave += 1;
     this.restTimer = 0;
@@ -402,7 +403,7 @@ class Game {
     let leaked = false;
     for (const e of this.enemies) {
       if (e.dead || e.escaped) continue;
-      e.update(dt);
+      e.update(dt, this);
       // A trilha e carimbada por distancia, nao por quadro: o custo nao muda
       // com a taxa de quadros nem com a velocidade do jogo.
       if (e.walked - e.lastStamp >= Trail.PASSO) {
@@ -490,6 +491,61 @@ class Game {
     if (dealt < 18 && Math.random() > 0.25) return;
     this.notify(Math.round(dealt), enemy.x, enemy.y - enemy.radius - 4,
                 DAMAGE_META[school].color);
+  }
+
+  /* A torre apanha de um inimigo impaciente. Se cair, a celula abre e o
+   * labirinto inteiro se refaz -- o que e o ponto: a serpentina deixa de ser
+   * construcao definitiva e vira uma coisa que precisa ser mantida. */
+  torreApanha(torre, dano, inimigo) {
+    if (!torre || torre.destruida) return;
+
+    if (torre.apanhar(dano)) {
+      this.removeTower(torre);
+      if (this.selectedTower === torre) this.selectedTower = null;
+      if (this.menuTower === torre) this.menuTower = null;
+      if (this.fusePending && (this.fusePending.tower === torre ||
+          this.fusePending.partners.indexOf(torre) !== -1)) this.fusePending = null;
+
+      this.notifyCell('Torre destruída', torre.c, torre.r, '#f87171');
+      this.effects.push({ x: torre.x, y: torre.y, radius: CONFIG.tile * 0.7,
+                          life: 0.5, max: 0.5, color: '#f87171', heavy: true });
+      this.effects.push({ kind: 'shards', x: torre.x, y: torre.y, radius: CONFIG.tile * 0.4,
+                          life: 0.45, max: 0.45, color: '#94a3b8' });
+      this.emit();
+      return;
+    }
+
+    if (this.effects.length < 90 && Math.random() < 0.18) {
+      this.effects.push({ kind: 'spark', x: torre.x, y: torre.y,
+                          angle: Math.atan2(inimigo.y - torre.y, inimigo.x - torre.x),
+                          life: 0.16, max: 0.16, color: '#cbd5e1', big: false });
+    }
+  }
+
+  /* Reparo automatico no intervalo entre ondas. Serpentina curta se recupera
+   * inteira; serpentina gigante nao -- o desgaste e o preco do comprimento. */
+  repararTorres(fracao) {
+    let mexeu = false;
+    for (const t of this.towers) {
+      if (!t.ferida) continue;
+      t.reparar(fracao);
+      mexeu = true;
+    }
+    if (mexeu) this.emit();
+  }
+
+  /* Reparo manual, pago. O jogador escolhe entre consertar o tijolo da frente
+   * e comprar dano novo -- que e a decisao que faltava. */
+  repararSelecionada() {
+    const t = this.menuTower || this.selectedTower;
+    if (!t || !t.ferida) return false;
+    const custo = t.custoReparo;
+    if (this.gold < custo) { this.notifyCell('Ouro insuficiente', t.c, t.r, '#f87171'); return false; }
+    this.gold -= custo;
+    t.hp = t.maxHp;
+    this.notifyCell('-' + custo, t.c, t.r, '#4ade80');
+    this.emit();
+    return true;
   }
 
   /* Clarão na boca de tiro, disparado pela torre no instante do tiro. */

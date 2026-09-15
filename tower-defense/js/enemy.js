@@ -38,6 +38,15 @@ class Enemy {
     // por monstro viraria papel picado e não acrescentaria decisão nenhuma.
     this.medo = def.medo || 'normal';
 
+    /* Paciencia: quantas vezes a rota pode ser mais longa que a viagem direta
+     * antes dele parar de andar e quebrar a parede. O ataque escala com o
+     * nivel junto com a vida -- senao o labirinto voltaria a ser eterno nas
+     * ondas altas, que e exatamente o problema que isto existe para resolver. */
+    this.paciencia = def.paciencia || 99;
+    this.ataque = (def.ataque || 0) * levelMul;
+    this.impaciente = false;
+    this.atacando = null;
+
     this.x = (grid.spawn.c + 0.5) * tile;
     this.y = (grid.spawn.r + 0.5) * tile;
 
@@ -65,6 +74,28 @@ class Enemy {
     return d === -1 ? Number.MAX_SAFE_INTEGER : d;
   }
 
+  /* A parede que ele cava: a vizinha bloqueada por TORRE que fica mais perto
+   * da saida num tabuleiro sem torres. Ou seja, ele cava na direcao certa.
+   * Rocha do mapa nao conta -- aquilo nao quebra. */
+  paredeAlvo(cell, game) {
+    if (!game) return null;
+    let melhor = null, melhorDist = Infinity;
+
+    for (const d of DIRS) {
+      const nc = cell.c + d[0], nr = cell.r + d[1];
+      if (!this.grid.inBounds(nc, nr)) continue;
+      if (this.grid.cellAt(nc, nr) !== CELL.TORRE) continue;
+
+      const torre = game.towerAt.get(nc + ',' + nr);
+      if (!torre) continue;
+
+      const dl = this.grid.distLivre[this.grid.idx(nc, nr)];
+      if (dl < 0 || dl >= melhorDist) continue;
+      melhorDist = dl; melhor = torre;
+    }
+    return melhor;
+  }
+
   applySlow(factor, duration) {
     // Lentidao nao acumula: vale sempre o efeito mais forte ainda ativo.
     if (factor >= this.slowFactor) {
@@ -84,7 +115,7 @@ class Enemy {
     return dealt;
   }
 
-  update(dt) {
+  update(dt, game) {
     if (this.hitFlash > 0) this.hitFlash -= dt;
     // O tranco nunca move o inimigo de verdade: mexer na posição empurraria
     // ele para dentro de paredes e bagunçaria o campo de fluxo.
@@ -102,6 +133,23 @@ class Enemy {
       this.escaped = true;
       return;
     }
+
+    /* Paciencia. O inimigo compara a viagem que o labirinto impos com a que
+     * ele faria num tabuleiro sem torres. Passou do limite dele, ele para de
+     * andar e cava. */
+    this.impaciente = !!CONFIG.medoPaciencia && this.ataque > 0 &&
+                      this.grid.folga(cell.c, cell.r) > this.paciencia;
+
+    if (this.impaciente) {
+      const alvo = this.paredeAlvo(cell, game);
+      if (alvo) {
+        this.atacando = alvo;
+        this.angle = Math.atan2(alvo.y - this.y, alvo.x - this.x);
+        game.torreApanha(alvo, this.ataque * dt, this);
+        return;   // cavando: nao anda, nao pisa trilha
+      }
+    }
+    this.atacando = null;
 
     const next = this.grid.nextCell(cell.c, cell.r, this.medo);
     if (!next) return; // sem rota: so acontece se a Muralha expirar num quadro ruim

@@ -46,7 +46,10 @@ class Tower {
     this.invested = this.def.cost;
     this.x = (c + 0.5) * tile;
     this.y = (r + 0.5) * tile;
+    this.destruida = false;
+    this.golpe = 0;          // clarao de quando a torre apanha
     this.refresh();
+    this.hp = this.maxHp;
   }
 
   /* Recalcula os status a partir da base e dos ramos escolhidos.
@@ -82,6 +85,26 @@ class Tower {
 
   get stats() { return this._stats; }
 
+  /* Vida sai do investimento: o tijolo de 50 de ouro e frageis de proposito, e
+   * a torre que voce evoluiu aguenta. Nao existe "parede de graca". */
+  get maxHp() { return Math.round(CONFIG.vidaBase + this.invested * CONFIG.vidaPorOuro); }
+
+  get ferida() { return this.hp < this.maxHp; }
+
+  get custoReparo() { return Math.ceil((this.maxHp - this.hp) * CONFIG.reparoCusto); }
+
+  /* Devolve true se a torre caiu. */
+  apanhar(dano) {
+    this.hp -= dano;
+    this.golpe = 0.18;
+    if (this.hp <= 0) { this.hp = 0; this.destruida = true; }
+    return this.destruida;
+  }
+
+  reparar(fracao) {
+    this.hp = Math.min(this.maxHp, this.hp + this.maxHp * fracao);
+  }
+
   branchAt(level, key) {
     if (!this.def.upgrades || !this.def.upgrades[level]) return null;
     for (const b of this.def.upgrades[level]) if (b.key === key) return b;
@@ -106,10 +129,14 @@ class Tower {
   upgrade(branchKey) {
     const branch = this.branchAt(this.level + 2, branchKey);
     if (!branch) return false;
+    const antes = this.maxHp;
     this.invested += branch.cost;
     this.path.push(branchKey);
     this.level += 1;
     this.refresh();
+    // Evoluir aumenta a vida maxima e entrega a diferenca: a torre nova nao
+    // nasce ferida so porque a antiga tinha apanhado.
+    this.hp += this.maxHp - antes;
     return true;
   }
 
@@ -123,6 +150,7 @@ class Tower {
     this.invested += other.invested;
     this.cooldown = 0;
     this.refresh();
+    this.hp = this.maxHp;
   }
 
   /* Mira no inimigo mais adiantado dentro do alcance: o mais perto de vazar. */
@@ -145,6 +173,7 @@ class Tower {
     if (this.cooldown > 0) this.cooldown -= dt;
     if (this.aquecer > 0) this.aquecer -= dt;
     if (this.recoil > 0) this.recoil -= dt * 5;
+    if (this.golpe > 0) this.golpe -= dt;
 
     const target = this.pickTarget(enemies);
     if (!target) return;

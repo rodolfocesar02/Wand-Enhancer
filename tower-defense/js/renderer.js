@@ -355,6 +355,28 @@ const Renderer = {
 
     this.towerBadges(ctx, tower, t);
     this.towerMute(ctx, tower, t);
+    this.towerHp(ctx, tower, t);
+  },
+
+  /* Vida da torre. So aparece quando ela ja apanhou: uma barra permanente em
+   * cada torre poluiria o tabuleiro inteiro para informar que nada aconteceu.
+   * Quando aparece, e a coisa mais urgente na tela. */
+  towerHp(ctx, tower, t) {
+    if (tower.golpe > 0) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(0.55, tower.golpe * 3);
+      ctx.fillStyle = '#f87171';
+      ctx.fillRect(tower.c * t + 2, tower.r * t + 2, t - 4, t - 4);
+      ctx.restore();
+    }
+    if (!tower.ferida) return;
+
+    const frac = Math.max(0, tower.hp / tower.maxHp);
+    const w = t - 18, x = tower.c * t + 9, y = tower.r * t + t - 6;
+    ctx.fillStyle = 'rgba(8,11,20,.8)';
+    ctx.fillRect(x - 1, y - 1, w + 2, 5);
+    ctx.fillStyle = frac > 0.5 ? '#4ade80' : frac > 0.22 ? '#fbbf24' : '#f87171';
+    ctx.fillRect(x, y, w * frac, 3);
   },
 
   /* Marca da torre silenciosa e o aquecimento ao voltar a atirar. */
@@ -590,6 +612,7 @@ const Renderer = {
       ctx.restore();
 
       this.enemyMarker(ctx, e, game);
+      this.enemyDig(ctx, e, game);
       this.enemyBar(ctx, e);
     }
   },
@@ -674,6 +697,29 @@ const Renderer = {
       ctx.stroke();
       ctx.restore();
     }
+  },
+
+  /* Anel no inimigo que parou de andar e esta cavando. Sem isso o jogador ve
+   * um monstro travado na parede e acha que e bug, em vez de entender que o
+   * labirinto dele passou do limite. */
+  enemyDig(ctx, e, game) {
+    if (!e.atacando) return;
+    const p = 0.5 + 0.5 * Math.sin(game.elapsed * 14);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(248,113,113,' + (0.45 + p * 0.45) + ')';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.radius + 5 + p * 2, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(248,113,113,.7)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(e.x, e.y);
+    ctx.lineTo(e.atacando.x, e.atacando.y);
+    ctx.stroke();
+    ctx.restore();
   },
 
   enemyBar(ctx, e) {

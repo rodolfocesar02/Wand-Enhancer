@@ -38,6 +38,15 @@ class Grid {
     this.cells = new Uint8Array(this.cols * this.rows);
     this.dist = new Int32Array(this.cols * this.rows);
     this.flow = new Int8Array(this.cols * this.rows);
+    // Distancia ate a saida IGNORANDO torres: so a rocha do mapa bloqueia.
+    // E a referencia da paciencia -- quanto o labirinto alongou a viagem em
+    // relacao ao que ela seria num tabuleiro vazio.
+    this.distLivre = new Int32Array(this.cols * this.rows);
+    // Bandeira explicita. A primeira versao testava distLivre[saida] !== 0
+    // para saber se precisava calcular -- e Int32Array ja nasce zerado, entao
+    // a condicao era falsa desde o inicio e o BFS livre nunca rodava. A folga
+    // dava 1,00 numa serpentina de 62 passos.
+    this.livrePronto = false;
 
     // Um campo por classe de medo. custoFn e plugado pelo jogo e devolve o
     // custo extra por celula, ou null quando o medo esta desligado.
@@ -69,8 +78,53 @@ class Grid {
     return (c === this.spawn.c && r === this.spawn.r) || (c === this.exit.c && r === this.exit.r);
   }
 
+  /* BFS que ignora torres: so a rocha do mapa bloqueia. Muda apenas quando o
+   * mapa muda, entao e calculado uma vez e nao a cada construcao. */
+  computeLivre() {
+    this.livrePronto = true;
+    this.distLivre.fill(-1);
+    const start = this.idx(this.exit.c, this.exit.r);
+    this.distLivre[start] = 0;
+
+    const queue = new Int32Array(this.cols * this.rows);
+    let head = 0, tail = 0;
+    queue[tail++] = start;
+
+    while (head < tail) {
+      const cur = queue[head++];
+      const c = cur % this.cols;
+      const r = (cur - c) / this.cols;
+      const next = this.distLivre[cur] + 1;
+
+      for (let d = 0; d < DIRS.length; d++) {
+        const nc = c + DIRS[d][0];
+        const nr = r + DIRS[d][1];
+        if (!this.inBounds(nc, nr)) continue;
+        const ni = this.idx(nc, nr);
+        if (this.cells[ni] === CELL.TERRENO || this.distLivre[ni] !== -1) continue;
+        this.distLivre[ni] = next;
+        queue[tail++] = ni;
+      }
+    }
+  }
+
+  /* Quanto o labirinto alongou a viagem a partir desta celula. 1 = rota
+   * direta; 3 = o jogador esta fazendo o inimigo andar o triplo.
+   *
+   * E a medida da paciencia. Uma torre que so serve de tijolo nao aparece em
+   * lugar nenhum do jogo ate aqui: e aqui que ela cobra o preco. */
+  folga(c, r) {
+    if (!this.inBounds(c, r)) return 1;
+    const i = this.idx(c, r);
+    const livre = this.distLivre[i];
+    const real = this.dist[i];
+    if (livre <= 0 || real < 0) return 1;
+    return real / livre;
+  }
+
   /* BFS reverso a partir da saida. Preenche dist (-1 = inalcancavel) e flow. */
   compute() {
+    if (!this.livrePronto) this.computeLivre();
     this.dist.fill(-1);
     this.flow.fill(-1);
 

@@ -27,7 +27,30 @@ const CONFIG = {
 
   /* Segundos em que a torre nao atira depois de sair do modo silencioso.
    * Sem esse atrito, calar e descalar seria escolha sem custo. */
-  aquecimento: 0.8
+  aquecimento: 0.8,
+
+  /* Paciencia: o inimigo quebra a parede quando o labirinto passa do limite.
+   *
+   * Sem isto o zigue-zague e estrategia dominante e o resto do jogo e
+   * decoracao -- medido: no mesmo nivel de desbloqueio a serpentina vence 6 de
+   * 6 partidas com rota de 54 passos, enquanto o killbox de tabuleiro aberto
+   * perde 6 de 6. E o jogador nem precisa evoluir as torres: 36 Arqueiras
+   * nivel 1 usadas como tijolo valem mais que 8 torres nivel 3, porque cada
+   * celula a mais multiplica o valor de TODAS as outras torres.
+   *
+   * Nenhuma mecanica de rota conserta isso. O medo decide por onde o inimigo
+   * anda; a serpentina apaga a escolha. O preco tinha que cair sobre o
+   * comprimento em si.
+   *
+   * vidaBase/vidaPorOuro: vida da torre a partir do que foi investido nela.
+   * O tijolo barato e o elo fraco, de proposito -- e por isso que a "cerca"
+   * vira um papel de verdade: parede precisa de vida, nao de dano.
+   * reparoOnda: fracao da vida que volta em cada intervalo entre ondas. */
+  medoPaciencia: true,
+  vidaBase: 195,
+  vidaPorOuro: 3.6,
+  reparoOnda: 0.5,
+  reparoCusto: 0.5          // ouro por ponto de vida, no reparo manual
 };
 
 /* O canvas é mais alto que o tabuleiro: a faixa de baixo carrega as magias,
@@ -289,17 +312,34 @@ const FUSIONS = {
  * E o que faz duas rotas aparecerem na mesma onda -- o Tanque corta reto pelo
  * corredor da morte enquanto o Bruxo contorna o mapa. Sem essa diferenca o
  * medo seria so um caminho novo, igual para todo mundo. */
+/* paciencia: quantas vezes a rota pode ser mais longa que a viagem direta
+ * antes deste inimigo parar de andar e atacar a parede. ataque: dano por
+ * segundo contra torres.
+ *
+ * Nao e todo mundo que quebra, e isso e o ponto. O lixo da onda continua
+ * fazendo o percurso inteiro -- o labirinto funciona contra ele. Quem cobra
+ * o preco do comprimento e o Tanque e o Chefe, que tem musculo para isso.
+ * O resultado legivel: sua serpentina segura as ondas comuns e apanha nas
+ * ondas de Tanque. Ela deixa de ser construcao definitiva e vira uma coisa
+ * que voce mantem.
+ *
+ * Os numeros sao medidos, nao escolhidos. Na primeira calibragem o Tanque
+ * tinha paciencia 1.8 e o zigue-zague despencava da onda 25 para a 10 --
+ * ficava PIOR que nao fazer labirinto, o que so inverte a dominancia em vez
+ * de equilibrar. Com o dobro disso a serpentina chega inteira (54 passos) e
+ * vai ate a onda 21 sem vencer, continuando a melhor estrategia do jogo sem
+ * ser a unica. */
 const ENEMY_TYPES = {
   grunt:  { name: 'Grunt',  hp: 62,   speed: 56,  gold: 8,   radius: 15, shape: 'triangulo',
-            color: '#e2e8f0', leak: 1, medo: 'normal' },
+            color: '#e2e8f0', leak: 1, medo: 'normal',    paciencia: 6.8, ataque: 10 },
   veloz:  { name: 'Veloz',  hp: 42,   speed: 104, gold: 11,  radius: 12, shape: 'losango',
-            color: '#5eead4', leak: 1, medo: 'afoito' },
+            color: '#5eead4', leak: 1, medo: 'afoito',    paciencia: 9.0, ataque: 5 },
   tanque: { name: 'Tanque', hp: 245,  speed: 34,  gold: 24,  radius: 20, shape: 'hexagono',
-            color: '#818cf8', leak: 2, medo: 'afoito' },
+            color: '#818cf8', leak: 2, medo: 'afoito',    paciencia: 3.6, ataque: 60 },
   bruxo:  { name: 'Bruxo',  hp: 120,  speed: 62,  gold: 18,  radius: 16, shape: 'estrela',
-            color: '#f472b6', leak: 2, medo: 'cauteloso' },
+            color: '#f472b6', leak: 2, medo: 'cauteloso', paciencia: 5.6, ataque: 22 },
   chefe:  { name: 'Chefe',  hp: 1700, speed: 31,  gold: 170, radius: 29, shape: 'chefe',
-            color: '#f43f5e', leak: 6, medo: 'cauteloso' }
+            color: '#f43f5e', leak: 6, medo: 'cauteloso', paciencia: 3.0, ataque: 170 }
 };
 
 /* Rotulo legivel de cada classe, usado na dica do jogo. */

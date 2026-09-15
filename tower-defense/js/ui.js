@@ -34,6 +34,7 @@ const UI = {
 
       menu: document.getElementById('tower-menu'),
       tmMute: document.getElementById('tm-mute'),
+      tmRepair: document.getElementById('tm-repair'),
       medo: document.getElementById('btn-medo'),
       tmName: document.getElementById('tm-name'),
       tmClose: document.getElementById('tm-close'),
@@ -73,6 +74,7 @@ const UI = {
     this.el.speed.addEventListener('click', () => g.cycleSpeed());
     this.el.tmSell.addEventListener('click', () => g.sellSelected());
     this.el.tmMute.addEventListener('click', () => g.toggleMute(g.menuTower));
+    this.el.tmRepair.addEventListener('click', () => g.repararSelecionada());
     this.el.medo.addEventListener('click', () => g.toggleMedo());
     this.el.tmClose.addEventListener('click', () => g.closeMenu());
     this.armTwice(this.el.quit, 'Abandonar', 'Abandonar mesmo? Clique de novo', () => g.endRun(false));
@@ -219,6 +221,7 @@ const UI = {
     if (s.dmg.magico > 0) rows.push(['Dano mágico', Math.round(s.dmg.magico)]);
     rows.push(['Cadência', (1 / s.cooldown).toFixed(2) + '/s']);
     rows.push(['Alcance', Math.round(s.range)]);
+    rows.push(['Vida', Math.round(t.hp) + ' / ' + t.maxHp]);
     rows.push(['DPS', Math.round(Damage.dps(s))]);
     if (s.splash) rows.push(['Área', Math.round(s.splash)]);
     if (s.slow) rows.push(['Lentidão', Math.round(s.slow * 100) + '%']);
@@ -239,6 +242,12 @@ const UI = {
     }
 
     this.syncFusion(t);
+    e.tmRepair.hidden = !t.ferida;
+    if (t.ferida) {
+      e.tmRepair.textContent = 'Reparar (' + t.custoReparo + ')';
+      e.tmRepair.disabled = g.gold < t.custoReparo;
+      e.tmRepair.className = 'primary';
+    }
     e.tmMute.textContent = t.mudo ? 'Voltar a atirar' : 'Silenciar (emboscada)';
     e.tmMute.className = t.mudo ? 'primary' : '';
     e.tmMute.title = t.mudo
