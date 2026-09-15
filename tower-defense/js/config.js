@@ -17,7 +17,17 @@ const CONFIG = {
   sellRate: 0.7,
   earlyCallBonus: 2,
   wavePause: 7,
-  speeds: [1, 2, 3]
+  speeds: [1, 2, 3],
+
+  /* Medo: a rota deixa de ser a mais curta e passa a ser a mais barata, e o
+   * custo sobe onde a defesa ja causou dano. Fica atras de uma chave porque a
+   * mecanica muda o jogo inteiro e precisa poder ser comparada ligada e
+   * desligada na mesma partida (tecla M, ou o botao no dock). */
+  medo: true,
+
+  /* Segundos em que a torre nao atira depois de sair do modo silencioso.
+   * Sem esse atrito, calar e descalar seria escolha sem custo. */
+  aquecimento: 0.8
 };
 
 /* O canvas é mais alto que o tabuleiro: a faixa de baixo carrega as magias,
@@ -275,17 +285,28 @@ const FUSIONS = {
 /* Os raios foram calibrados quando a celula tinha 48px e reescalados por
  * 64/48 quando ela cresceu, para o inimigo manter a mesma proporcao do
  * tabuleiro -- sem isso os sprites nao teriam pixels para existir. */
+/* medo: classe de sensibilidade ao campo de perigo (ver perigo.js).
+ * E o que faz duas rotas aparecerem na mesma onda -- o Tanque corta reto pelo
+ * corredor da morte enquanto o Bruxo contorna o mapa. Sem essa diferenca o
+ * medo seria so um caminho novo, igual para todo mundo. */
 const ENEMY_TYPES = {
   grunt:  { name: 'Grunt',  hp: 62,   speed: 56,  gold: 8,   radius: 15, shape: 'triangulo',
-            color: '#e2e8f0', leak: 1 },
+            color: '#e2e8f0', leak: 1, medo: 'normal' },
   veloz:  { name: 'Veloz',  hp: 42,   speed: 104, gold: 11,  radius: 12, shape: 'losango',
-            color: '#5eead4', leak: 1 },
+            color: '#5eead4', leak: 1, medo: 'afoito' },
   tanque: { name: 'Tanque', hp: 245,  speed: 34,  gold: 24,  radius: 20, shape: 'hexagono',
-            color: '#818cf8', leak: 2 },
+            color: '#818cf8', leak: 2, medo: 'afoito' },
   bruxo:  { name: 'Bruxo',  hp: 120,  speed: 62,  gold: 18,  radius: 16, shape: 'estrela',
-            color: '#f472b6', leak: 2 },
+            color: '#f472b6', leak: 2, medo: 'cauteloso' },
   chefe:  { name: 'Chefe',  hp: 1700, speed: 31,  gold: 170, radius: 29, shape: 'chefe',
-            color: '#f43f5e', leak: 6 }
+            color: '#f43f5e', leak: 6, medo: 'cauteloso' }
+};
+
+/* Rotulo legivel de cada classe, usado na dica do jogo. */
+const MEDO_META = {
+  afoito:    { label: 'Afoito',    desc: 'quase ignora o perigo', color: '#f97316' },
+  normal:    { label: 'Comum',     desc: 'desvia do óbvio',       color: '#facc15' },
+  cauteloso: { label: 'Cauteloso', desc: 'dá voltas enormes',     color: '#38bdf8' }
 };
 
 /* Afixo = cor + marcador + trade-off. Resistencia nunca passa de 0.65:

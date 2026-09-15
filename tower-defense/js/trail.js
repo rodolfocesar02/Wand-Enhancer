@@ -24,6 +24,9 @@ const Trail = {
   ESCALA: 0.5,        // meia resolução: a mancha é suave, ninguém vê a diferença
   PASSO: 5,           // pixels percorridos entre um carimbo e o seguinte
   ALFA: 0.085,        // opacidade de cada carimbo; satura devagar com o trafego
+  SATURA: 90,         // carimbos numa celula ate ela contar como trilha firme
+  versao: 0,          // muda a cada carimbo; o campo de medo usa para invalidar cache
+
 
   init() {
     this.cv = document.createElement('canvas');
@@ -32,6 +35,21 @@ const Trail = {
     this.ctx = this.cv.getContext('2d');
     this.carimbo = this.fazCarimbo(64);
     this.reset();
+  },
+
+  /* A contagem por celula e separada do canvas de proposito: o campo de medo
+   * le a trilha como desconto de custo, e a partida inteira precisa rodar sem
+   * tela para o balanceamento continuar sendo medido por simulacao. */
+  contar() {
+    if (!this.pisadas) this.pisadas = new Float32Array(CONFIG.cols * CONFIG.rows);
+    return this.pisadas;
+  },
+
+  /* Quanto aquela celula esta pisada, 0..1. */
+  nivel(c, r) {
+    const p = this.contar();
+    if (c < 0 || c >= CONFIG.cols || r < 0 || r >= CONFIG.rows) return 0;
+    return Math.min(1, p[r * CONFIG.cols + c] / this.SATURA);
   },
 
   /* Mancha radial com queda suave. Pré-renderizada uma vez: desenhar um
@@ -50,6 +68,8 @@ const Trail = {
   },
 
   reset() {
+    this.contar().fill(0);
+    this.versao += 1;
     if (!this.ctx) return;
     this.ctx.clearRect(0, 0, this.cv.width, this.cv.height);
   },
@@ -58,6 +78,13 @@ const Trail = {
    * percorridos, não a cada quadro -- assim o custo não depende da taxa de
    * quadros nem da velocidade do jogo. */
   stamp(enemy) {
+    const p = this.contar();
+    const cc = Math.floor(enemy.x / CONFIG.tile), cr = Math.floor(enemy.y / CONFIG.tile);
+    if (cc >= 0 && cc < CONFIG.cols && cr >= 0 && cr < CONFIG.rows) {
+      p[cr * CONFIG.cols + cc] += 1;
+      this.versao += 1;
+    }
+
     if (!this.ctx) return;
     const s = this.ESCALA;
     const r = enemy.radius * 1.5 * s;

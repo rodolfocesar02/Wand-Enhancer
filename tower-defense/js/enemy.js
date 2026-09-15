@@ -33,6 +33,10 @@ class Enemy {
     this.color = affix.color || def.color || '#e2e8f0';
     this.marker = affix.marker;
     this.shape = def.shape;
+    // Classe de sensibilidade ao medo: decide QUAL campo de fluxo este
+    // inimigo lê. Todos de uma classe seguem a mesma rota -- rota individual
+    // por monstro viraria papel picado e não acrescentaria decisão nenhuma.
+    this.medo = def.medo || 'normal';
 
     this.x = (grid.spawn.c + 0.5) * tile;
     this.y = (grid.spawn.r + 0.5) * tile;
@@ -99,7 +103,7 @@ class Enemy {
       return;
     }
 
-    const next = this.grid.nextCell(cell.c, cell.r);
+    const next = this.grid.nextCell(cell.c, cell.r, this.medo);
     if (!next) return; // sem rota: so acontece se a Muralha expirar num quadro ruim
 
     const targetX = (next.c + 0.5) * this.tile;
