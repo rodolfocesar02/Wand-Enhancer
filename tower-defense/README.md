@@ -383,7 +383,7 @@ sendo uma escolha de terreno, só que uma escolha de verdade em vez de um sortei
 | Arqueira + Altar | **Arqueira Rúnica** — flechas híbridas em cadência alta | vetor |
 | Balista + Bombarda | **Morteiro Pesado** — área enorme com alcance de cerco | ✅ |
 | Altar + Glacial | **Prisma Congelante** — magia em área que congela o grupo | vetor |
-| Bombarda + Templo | **Forja de Guerra** — explosão híbrida | vetor |
+| Bombarda + Templo | **Forja de Guerra** — explosão híbrida | ✅ |
 | Altar + Balista | **Lança Etérea** — perfura a fila com dano mágico puro | ✅ |
 | Arqueira + Glacial | **Caçadora de Gelo** — tiro rápido que mantém tudo lento | ✅ |
 | Balista + Glacial | **Lança do Inverno** — perfura a fila e deixa todos lentos | ✅ |
@@ -423,9 +423,47 @@ Auditei os nove mapeamentos com essa métrica e só esse estava errado. Um limit
 honesto dela: **cristal não separa Templo de Glacial**, porque o Vórtice base
 tem 24,8% de cristal (gelo). O que decide é a madeira.
 
-São **as 15 combinações possíveis**, 13 com arte. Faltam só as artes da Forja
-de Guerra (bombarda + templo) e da Estela Glacial (glacial + templo) — as duas
-receitas já existem e funcionam, desenhadas em vetor até a arte chegar.
+São **as 15 combinações possíveis**, 14 com arte. Falta só a da Estela Glacial
+(glacial + templo) — a receita já existe e funciona, desenhada em vetor até a
+arte chegar.
+
+### A fusão sobe até o nível 4
+
+A fusão deixou de ser ponto final. Ela evolui três vezes mais, com **três opções
+por nível** em vez das duas das torres base — mais escolha justamente onde o
+jogador já investiu mais.
+
+Os **135 ramos** (15 fusões × 3 níveis × 3 opções) são **gerados, não escritos**.
+Duas das três opções são sempre os dois eixos que toda torre tem, potência e
+alcance; a terceira sai do que a fusão **é**:
+
+| A fusão tem | O terceiro ramo é |
+|---|---|
+| área | Estilhaço Amplo → Onda de Choque |
+| lentidão | Frio Profundo → Nevasca |
+| perfuração | Ponta Afiada → Transpasse |
+| nada disso | Cadência → Rajada |
+
+O custo sai da soma das duas torres de origem (×1,15 / ×2,0 / ×3,4), então fusão
+cara sobe caro.
+
+**O que a medição mostrou, e é o oposto do que eu esperava:** antes dos níveis,
+fundir era uma **perda** de dano por ouro — 0,55× o que a Arqueira entrega. O
+jogador pagava a diferença em concentração, célula liberada e utilidade. No nível
+4 a fusão chega a **0,97×**, ou seja, empate.
+
+O ganho é **uniforme**: 76% a 82% para as quinze. Nenhuma virou armadilha nova, e
+a dispersão relativa não mudou (coeficiente de variação 0,27 → 0,29).
+
+A dispersão que existe — de 0,52× (Balista Gêmea) a 1,51× (Arqueira Rúnica) — é
+herdada das torres base, não criada aqui: a Balista rende 0,082 de DPS por ouro
+contra 0,274 da Arqueira. Isso não é defeito, é o preço de alcance 200 com
+perfuração, que dano por ouro não sabe medir.
+
+*(Nota de método: medi também contra a mistura real de afixos da onda 15 e as
+razões saíram idênticas. O conjunto de afixos é simétrico — dois blindados e
+dois encantados — então penaliza igualmente puro-físico, puro-mágico e híbrido.
+Para esta comparação, afixo não discrimina.)*
 
 A Sentinela Rúnica é a única arte que aponta para **baixo**, então leva
 `angleOffset: -Math.PI / 2`. As que apontam para cima usam `+Math.PI / 2`, e as

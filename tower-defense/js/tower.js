@@ -10,6 +10,8 @@
  * nova. A fusao ocupa a celula alvo e libera a outra -- o labirinto muda
  * junto, entao fundir tambem e uma decisao de terreno. */
 
+const ROMANOS = ['I', 'II', 'III', 'IV', 'V'];
+
 function fusionKey(a, b) {
   return [a, b].sort().join('+');
 }
@@ -123,9 +125,10 @@ class Tower {
     return null;
   }
 
-  /* Os dois ramos oferecidos no proximo nivel, ou [] se nao ha proximo. */
+  /* Os ramos oferecidos no proximo nivel, ou [] se nao ha proximo.
+   * Torre base: dois ramos, ate o nivel 3. Fusao: tres ramos, ate o nivel 4. */
   get nextBranches() {
-    if (this.fused || !this.def.upgrades) return [];
+    if (!this.def.upgrades) return [];
     return this.def.upgrades[this.level + 2] || [];
   }
 
@@ -134,8 +137,8 @@ class Tower {
   get sellValue() { return Math.floor(this.invested * CONFIG.sellRate); }
 
   get label() {
-    if (this.fused) return this.def.name;
-    return this.def.name + (this.level > 0 ? ' ' + 'I'.repeat(this.level + 1) : '');
+    // Numeral romano de verdade: a fusao chega ao nivel 4, e 'IIII' nao e um.
+    return this.def.name + (this.level > 0 ? ' ' + ROMANOS[this.level] : '');
   }
 
   upgrade(branchKey) {

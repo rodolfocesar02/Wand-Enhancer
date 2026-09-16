@@ -447,6 +447,92 @@ const FUSIONS = {
   }
 };
 
+
+/* ---------------------------------------------- evolucao das fusoes ------
+ *
+ * A fusao deixou de ser ponto final. Ela sobe ate o nivel 4, com TRES opcoes
+ * por nivel em vez das duas das torres base -- mais escolha justamente onde o
+ * jogador ja investiu mais.
+ *
+ * Os 135 ramos (15 fusoes x 3 niveis x 3 opcoes) sao GERADOS, nao escritos.
+ * Escrever a mao seria 135 blocos de status para manter em sincronia, e o bug
+ * das fusoes originais (seis receitas entregando 33% a 69% do que consumiam)
+ * nasceu exatamente de numero escrito a mao sem medicao.
+ *
+ * Duas das tres opcoes sao sempre as mesmas -- potencia e alcance, os dois
+ * eixos que toda torre tem. A terceira sai do que a fusao E: quem tem area
+ * ganha area, quem tem lentidao ganha lentidao, quem perfura ganha perfuracao,
+ * e quem nao tem nada disso ganha cadencia. Assim a escolha do terceiro ramo
+ * fala da torre, e nao de uma lista generica.
+ *
+ * O custo sai da soma das duas torres de origem, entao fusao cara sobe caro. */
+const FUSAO_ESCADA = { 2: 1.15, 3: 2.00, 4: 3.40 };
+
+function ramoEspecial(def, nivel) {
+  const b = def.base;
+  if (b.splash) {
+    return nivel === 2
+      ? { key: 'estilhaco', name: 'Estilhaço Amplo', desc: '+40% área, +10% dano',
+          mods: { splash: 1.40, damage: 1.10 } }
+      : { key: 'onda', name: 'Onda de Choque', desc: '+35% área, -15% recarga',
+          mods: { splash: 1.35, cooldown: 0.85 } };
+  }
+  if (b.slow) {
+    return nivel === 2
+      ? { key: 'frio', name: 'Frio Profundo', desc: '+30% lentidão e duração',
+          mods: { slow: 1.30, slowDur: 1.35 } }
+      : { key: 'nevasca', name: 'Nevasca', desc: '+25% lentidão, +20% dano',
+          mods: { slow: 1.25, slowDur: 1.30, damage: 1.20 } };
+  }
+  if (b.pierce) {
+    return nivel === 2
+      ? { key: 'ponta', name: 'Ponta Afiada', desc: '+2 perfuração, +10% dano',
+          mods: { pierce: 2, damage: 1.10 } }
+      : { key: 'transpasse', name: 'Transpasse', desc: '+3 perfuração, +20% dano',
+          mods: { pierce: 3, damage: 1.20 } };
+  }
+  return nivel === 2
+    ? { key: 'cadencia', name: 'Cadência', desc: '-28% recarga',
+        mods: { cooldown: 0.72 } }
+    : { key: 'rajada', name: 'Rajada', desc: '-32% recarga',
+        mods: { cooldown: 0.68 } };
+}
+
+function montaEvolucaoDasFusoes() {
+  for (const chave of Object.keys(FUSIONS)) {
+    const def = FUSIONS[chave];
+    const partes = chave.split('+');
+    const custoBase = TOWER_TYPES[partes[0]].cost + TOWER_TYPES[partes[1]].cost;
+    const preco = n => Math.round(custoBase * FUSAO_ESCADA[n] / 5) * 5;
+
+    def.upgrades = {
+      2: [
+        { key: 'potencia', name: 'Potência', desc: '+50% dano', cost: preco(2),
+          mods: { damage: 1.50 } },
+        { key: 'alcance', name: 'Alcance Estendido', desc: '+25% alcance, +10% dano',
+          cost: preco(2), mods: { range: 1.25, damage: 1.10 } },
+        Object.assign({ cost: preco(2) }, ramoEspecial(def, 2))
+      ],
+      3: [
+        { key: 'fulgor', name: 'Fulgor', desc: '+65% dano', cost: preco(3),
+          mods: { damage: 1.65 } },
+        { key: 'precisao', name: 'Precisão', desc: '+18% alcance, +35% dano',
+          cost: preco(3), mods: { range: 1.18, damage: 1.35 } },
+        Object.assign({ cost: preco(3) }, ramoEspecial(def, 3))
+      ],
+      4: [
+        { key: 'maestria', name: 'Maestria', desc: '+85% dano', cost: preco(4),
+          mods: { damage: 1.85 } },
+        { key: 'dominio', name: 'Domínio', desc: '+30% alcance, +45% dano',
+          cost: preco(4), mods: { range: 1.30, damage: 1.45 } },
+        { key: 'frenesi', name: 'Frenesi', desc: '-42% recarga', cost: preco(4),
+          mods: { cooldown: 0.58 } }
+      ]
+    };
+  }
+}
+montaEvolucaoDasFusoes();
+
 /* ----------------------------------------------------------- inimigos ---- */
 
 /* 5 silhuetas reaproveitadas. As variantes vem dos afixos, que trocam cor
