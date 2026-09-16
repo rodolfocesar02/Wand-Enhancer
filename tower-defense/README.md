@@ -390,6 +390,7 @@ sendo uma escolha de terreno, só que uma escolha de verdade em vez de um sortei
 | Balista + Templo | **Balista Gêmea** — dois virotes, um de cada escola | ✅ |
 | Arqueira + Balista | **Balista de Repetição** — cadência de arqueira, virote de balista | ✅ |
 | Altar + Bombarda | **Canhão Rúnico** — explosão puramente mágica, bem de perto | ✅ |
+| Altar + Templo | **Oráculo Rúnico** — dano híbrido constante, sem ponto fraco | ✅ |
 
 ### As duas famílias
 
@@ -400,10 +401,25 @@ depois o **Altar** com quatro. Altar + Balista pertence às duas e foi desenhada
 duas vezes — ficou com a da **família da Balista**, de disco de madeira.
 
 Eu tinha trocado pela versão do Altar, por coerência de disco, sem perguntar. A
-troca foi desfeita a pedido. A regra que fica: quem manda na arte é quem a
-desenha; eu meço DPS, não gosto.
+troca foi desfeita a pedido — e aí veio a correção que importava: **aquela
+segunda arte nunca foi Altar + Balista**. Era Altar + Templo.
 
-São **10 de 15** receitas. Só faltam arte a Forja de Guerra e a Caçadora de Gelo.
+A regra que separa as duas, dada pelo autor da arte: **Balista tem detalhes de
+madeira; Templo tem pedra e cristal.** Medindo a assinatura de cor dos sprites
+base, ela se confirma:
+
+| | madeira | pedra | cristal |
+|---|---:|---:|---:|
+| Balista (base) | 52,1% | 36,9% | **0,0%** |
+| Templo (base) | 19,1% | 46,0% | **15,5%** |
+| arte de madeira → Altar+Balista | **48,0%** | 8,1% | 12,5% |
+| arte de pedra → Altar+**Templo** | 17,9% | 27,5% | **29,6%** |
+
+Auditei os nove mapeamentos com essa métrica e só esse estava errado. Um limite
+honesto dela: **cristal não separa Templo de Glacial**, porque o Vórtice base
+tem 24,8% de cristal (gelo). O que decide é a madeira.
+
+São **11 de 15** receitas. Só faltam arte a Forja de Guerra e a Caçadora de Gelo.
 
 O Canhão Rúnico nasceu dessa leva: não existia como receita, e foi criado porque
 a arte de Altar + Bombarda chegou. É o extremo curto da curva — **118 de alcance,

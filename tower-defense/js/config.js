@@ -296,7 +296,7 @@ const TOWER_TYPES = {
 
 /* ------------------------------------------------------------- fusoes ---- */
 
-/* Receitas curadas: 10 das 15 combinacoes possiveis. Exigem duas torres nivel 3
+/* Receitas curadas: 11 das 15 combinacoes possiveis. Exigem duas torres nivel 3
  * em QUALQUER lugar do tabuleiro -- a exigencia de adjacencia era minha e
  * estava errada. A torre fundida ocupa a celula alvo e LIBERA a outra celula,
  * entao o labirinto muda e fundir e tambem uma decisao de terreno.
@@ -390,6 +390,19 @@ const FUSIONS = {
     blurb: 'Explosão puramente mágica, bem de perto',
     base: { range: 118, cooldown: 1.15, projSpeed: 380, dmg: { fisico: 0, magico: 210 },
             splash: 70 }
+  },
+
+  /* A arte desta chegou rotulada como Altar + Balista e eu engoli o rotulo.
+   * Balista tem detalhes de MADEIRA; Templo tem pedra e cristal. Medido nos
+   * sprites base: Balista 52% madeira e 0% cristal, Templo 19% madeira e 15%
+   * cristal. O disco em questao deu 18% madeira e 30% cristal -- e Templo.
+   *
+   * Sem area e sem perfuracao de proposito: e a torre que so acerta, com as
+   * duas escolas de dano, para o afixo nenhum resistir. */
+  'altar+templo': {
+    name: 'Oráculo Rúnico', color: '#c7d2fe', shape: 'templo',
+    blurb: 'Dano híbrido constante, sem ponto fraco',
+    base: { range: 165, cooldown: 0.98, projSpeed: 700, dmg: { fisico: 68, magico: 82 } }
   }
 };
 
