@@ -394,6 +394,7 @@ sendo uma escolha de terreno, só que uma escolha de verdade em vez de um sortei
 | Bombarda + Glacial | **Bombarda Glacial** — estilhaços de gelo em área, tudo sai lento | ✅ |
 | Arqueira + Bombarda | **Morteiro Ligeiro** — estouros pequenos e seguidos, sem pausa | ✅ |
 | Arqueira + Templo | **Sentinela Rúnica** — precisão híbrida de longe, atravessa um alvo | ✅ |
+| Glacial + Templo | **Estela Glacial** — congela um alvo por vez, com as duas escolas | vetor |
 
 ### As duas famílias
 
@@ -422,8 +423,9 @@ Auditei os nove mapeamentos com essa métrica e só esse estava errado. Um limit
 honesto dela: **cristal não separa Templo de Glacial**, porque o Vórtice base
 tem 24,8% de cristal (gelo). O que decide é a madeira.
 
-São **14 de 15** receitas, **13 com arte**. Falta a arte da Forja de Guerra
-(bombarda + templo) e a última receita, Glacial + Templo.
+São **as 15 combinações possíveis**, 13 com arte. Faltam só as artes da Forja
+de Guerra (bombarda + templo) e da Estela Glacial (glacial + templo) — as duas
+receitas já existem e funcionam, desenhadas em vetor até a arte chegar.
 
 A Sentinela Rúnica é a única arte que aponta para **baixo**, então leva
 `angleOffset: -Math.PI / 2`. As que apontam para cima usam `+Math.PI / 2`, e as

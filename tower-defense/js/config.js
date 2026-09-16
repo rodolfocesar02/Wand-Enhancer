@@ -296,7 +296,7 @@ const TOWER_TYPES = {
 
 /* ------------------------------------------------------------- fusoes ---- */
 
-/* Receitas curadas: 14 das 15 combinacoes possiveis. Exigem duas torres nivel 3
+/* As 15 combinacoes possiveis, todas. Exigem duas torres nivel 3
  * em QUALQUER lugar do tabuleiro -- a exigencia de adjacencia era minha e
  * estava errada. A torre fundida ocupa a celula alvo e LIBERA a outra celula,
  * entao o labirinto muda e fundir e tambem uma decisao de terreno.
@@ -432,6 +432,18 @@ const FUSIONS = {
     blurb: 'Precisão híbrida de longe, atravessa um alvo',
     base: { range: 170, cooldown: 0.89, projSpeed: 720, dmg: { fisico: 55, magico: 55 },
             pierce: 1 }
+  },
+
+  /* A decima quinta e ultima: fecha as 15 combinacoes possiveis.
+   *
+   * Lentidao forte SEM area, para nao repetir o Prisma Congelante, que ja faz
+   * area com lentidao pelo lado magico. Esta e alvo unico, hibrida, e segura
+   * um inimigo de cada vez por muito tempo. */
+  'glacial+templo': {
+    name: 'Estela Glacial', color: '#a5f3fc', shape: 'templo',
+    blurb: 'Congela um alvo por vez, com as duas escolas',
+    base: { range: 155, cooldown: 1.04, projSpeed: 560, dmg: { fisico: 45, magico: 70 },
+            slow: 0.50, slowDur: 2.4 }
   }
 };
 
