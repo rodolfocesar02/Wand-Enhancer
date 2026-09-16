@@ -43,7 +43,9 @@ class Enemy {
      * nivel junto com a vida -- senao o labirinto voltaria a ser eterno nas
      * ondas altas, que e exatamente o problema que isto existe para resolver. */
     this.paciencia = def.paciencia || 99;
-    this.ataque = (def.ataque || 0) * levelMul;
+    // O ataque contra torres acompanha o nivel bem mais devagar que a vida:
+    // a vida da TORRE nao escala com a onda, so com o ouro investido nela.
+    this.ataque = (def.ataque || 0) * Math.pow(levelMul, CONFIG.ataqueEscala);
     this.impaciente = false;
     this.atacando = null;
 

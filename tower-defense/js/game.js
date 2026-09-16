@@ -707,6 +707,48 @@ class Game {
     if (mexeu) this.emit();
   }
 
+  /* Torres feridas e o que custa para deixar todas inteiras. */
+  feridas() { return this.towers.filter(t => t.ferida); }
+
+  custoReparoTotal() {
+    let n = 0;
+    for (const t of this.feridas()) n += t.custoReparo;
+    return n;
+  }
+
+  /* Reparo em massa.
+   *
+   * Existe porque o reparo de uma torre so era mecanica morta: numa partida
+   * real medida, o jogador gastou 8.190 de ouro reconstruindo parede, 3.540
+   * evoluindo e ZERO reparando -- com cinquenta torres no tabuleiro, achar a
+   * ferida e abrir o menu dela no meio da onda nao acontece. E terminava
+   * ondas com 3.288 de ouro parado enquanto perdia.
+   *
+   * Conserta da mais ferida para a menos ferida enquanto o ouro der: parcial
+   * e melhor que tudo-ou-nada, porque a torre que esta quase caindo e a que
+   * importa. */
+  repararTudo() {
+    const fila = this.feridas().sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp));
+    if (fila.length === 0) return 0;
+
+    let gasto = 0, n = 0;
+    for (const t of fila) {
+      const custo = t.custoReparo;
+      if (custo > this.gold) break;
+      this.gold -= custo;
+      this.ondaStats.ouroReparo += custo;
+      gasto += custo;
+      t.hp = t.maxHp;
+      n += 1;
+    }
+    if (n > 0) {
+      this.notifyCell(n + (n === 1 ? ' torre reparada' : ' torres reparadas'),
+                      this.grid.spawn.c + 3, this.grid.spawn.r, '#4ade80');
+      this.emit();
+    }
+    return gasto;
+  }
+
   /* Reparo manual, pago. O jogador escolhe entre consertar o tijolo da frente
    * e comprar dano novo -- que e a decisao que faltava. */
   repararSelecionada() {

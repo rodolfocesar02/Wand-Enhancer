@@ -52,6 +52,20 @@ const CONFIG = {
   reparoOnda: 0.5,
   reparoCusto: 0.5,         // ouro por ponto de vida, no reparo manual
 
+  /* Expoente com que o ataque CONTRA TORRES acompanha o nivel do inimigo.
+   *
+   * Era 1.0, ou seja o mesmo 1,145^nivel que escala a vida deles -- e a vida
+   * da torre nao escala com nada, ela vem do ouro investido. Na onda 20 isso
+   * dava um Tanque com 456 de dano por segundo contra uma torre de 375 de
+   * vida: nenhuma parede sobrevivia e o jogo virava esteira de reconstrucao.
+   *
+   * Medido numa partida real: 86 torres destruidas em 12 ondas, 63% de tudo
+   * que foi construido, 8.190 de ouro em parede contra 3.540 em evolucao e
+   * ZERO em reparo -- o jogador nunca teve tempo de reparar porque a torre
+   * morria antes. Com 0,35 o Tanque da onda 20 faz 120, e derrubar uma torre
+   * passa a levar tres segundos em vez de menos de um. */
+  ataqueEscala: 0.35,
+
   /* Obra: a torre nao nasce pronta.
    *
    * Enquanto esta em obra ela NAO BLOQUEIA e NAO ATIRA. Isso e o ponto: ate

@@ -40,6 +40,7 @@ const UI = {
       reportText: document.getElementById('report-text'),
       reportCopy: document.getElementById('report-copy'),
       medo: document.getElementById('btn-medo'),
+      repairAll: document.getElementById('btn-repair-all'),
       tmName: document.getElementById('tm-name'),
       tmClose: document.getElementById('tm-close'),
       tmSplit: document.getElementById('tm-split'),
@@ -80,6 +81,7 @@ const UI = {
     this.el.tmMute.addEventListener('click', () => g.toggleMute(g.menuTower));
     this.el.tmRepair.addEventListener('click', () => g.repararSelecionada());
     this.el.medo.addEventListener('click', () => g.toggleMedo());
+    this.el.repairAll.addEventListener('click', () => g.repararTudo());
     this.el.tmClose.addEventListener('click', () => g.closeMenu());
     this.armTwice(this.el.quit, 'Abandonar', 'Abandonar mesmo? Clique de novo', () => g.endRun(false));
     this.el.overlayBtn.addEventListener('click', () => g.toMenu());
@@ -445,6 +447,13 @@ const UI = {
     e.speed.textContent = g.speed + 'x';
     e.medo.textContent = 'Medo: ' + (CONFIG.medo ? 'on' : 'off');
     e.medo.classList.toggle('selected', !!CONFIG.medo);
+
+    const feridas = g.feridas().length;
+    const custo = feridas ? g.custoReparoTotal() : 0;
+    e.repairAll.textContent = feridas ? 'Reparar ' + feridas + ' (' + custo + ')' : 'Reparar';
+    e.repairAll.disabled = !playing || feridas === 0 || g.gold < g.feridas()
+      .reduce((m, t) => Math.min(m, t.custoReparo), Infinity);
+    e.repairAll.classList.toggle('urgente', feridas > 0 && !e.repairAll.disabled);
 
     this.tickHint();
   },

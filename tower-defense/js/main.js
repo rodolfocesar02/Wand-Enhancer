@@ -119,6 +119,7 @@
     switch (ev.key.toLowerCase()) {
       case 'n': game.callWave(true); break;
       case 'm': game.toggleMedo(); break;
+      case 'f': game.repararTudo(); break;
       case 'x': if (game.menuTower || game.selectedTower) game.toggleMute(); break;
       case 'escape': game.clearSelection(); break;
       case ' ': ev.preventDefault(); game.togglePause(); break;

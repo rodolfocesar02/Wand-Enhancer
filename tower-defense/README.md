@@ -175,6 +175,44 @@ zigue-zague despencava para a onda 10, ficando *pior* que não fazer labirinto.
 Isso não equilibra, só inverte a dominância. O dobro disso é o ponto onde a
 serpentina chega inteira e ainda assim não fecha as 25 ondas.
 
+### O que a primeira partida humana mostrou
+
+O relatório de uma partida real (onda 20, mapa planície) desmentiu o bot:
+
+| | Bot | Jogador |
+|---|---|---|
+| Torres destruídas | 4 | **86** |
+| Perda (destruído ÷ construído) | 10% | **63%** |
+| Ouro em reparo | 0 | **0** |
+| Ondas sem nenhuma destruição | 16 de 20 | **9 de 20** |
+
+O bot não reproduzia nada disso porque **não reconstruía** o que caía — tirava a
+célula da lista assim que construía nela. Corrigido o bot, ele passou a medir
+30 destruições e 40% de perda, perto do humano.
+
+Duas causas, ambas reais:
+
+**1. O ataque contra torres escalava com o nível do inimigo (`1,145^nível`),
+e a vida da torre não escala com nada** — ela vem do ouro investido. Na onda 20
+isso dava um Tanque com 456 de dano por segundo contra uma torre de 375 de vida:
+menos de um segundo por parede. O jogo virava esteira de reconstrução, e o
+jogador gastou **8.190 de ouro em parede contra 3.540 em evolução**.
+
+Agora o ataque acompanha o nível com expoente **0,35**: o Tanque da onda 20 faz
+122, e derrubar uma torre leva 3,1 s em vez de 0,8 s.
+
+**2. O reparo de uma torre só era mecânica morta.** Zero de ouro gasto nele a
+partida inteira — com cinquenta torres no tabuleiro, achar a ferida e abrir o
+menu dela no meio da onda não acontece. E o jogador terminava ondas com **3.288
+de ouro parado** enquanto perdia. Agora há **Reparar** no dock (tecla `F`), que
+conserta da mais ferida para a menos enquanto o ouro der.
+
+O que isso **não** resolve: deixar a parede durável de verdade (4× de vida) faz o
+zigue-zague voltar a vencer 6 de 6 — a durabilidade da parede *é* o poder do
+zigue-zague. Medido, não suposto. O ganho aqui é de textura, não de cura:
+1,4 → 1,1 destruições por onda, 80% → 83% de ondas limpas, e a partida do bot vai
+da onda 20 para a 23 sem passar a vencer.
+
 Tudo atrás de `CONFIG.medoPaciencia`.
 
 ## Não existe estrada
@@ -557,6 +595,7 @@ expedições** para o arco completo.
 | `Q` `W` `E` `R` | Lançar magia |
 | `N` | Chamar a próxima onda |
 | `M` | Ligar / desligar o medo |
+| `F` | Reparar as torres feridas |
 | `X` | Silenciar / reativar a torre selecionada |
 | `Espaço` | Pausar / retomar |
 | `Esc` / botão direito | Cancelar seleção |
