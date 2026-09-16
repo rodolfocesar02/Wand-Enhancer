@@ -296,7 +296,7 @@ const TOWER_TYPES = {
 
 /* ------------------------------------------------------------- fusoes ---- */
 
-/* Receitas curadas: 13 das 15 combinacoes possiveis. Exigem duas torres nivel 3
+/* Receitas curadas: 14 das 15 combinacoes possiveis. Exigem duas torres nivel 3
  * em QUALQUER lugar do tabuleiro -- a exigencia de adjacencia era minha e
  * estava errada. A torre fundida ocupa a celula alvo e LIBERA a outra celula,
  * entao o labirinto muda e fundir e tambem uma decisao de terreno.
@@ -422,6 +422,16 @@ const FUSIONS = {
     blurb: 'Estouros pequenos e seguidos, sem pausa',
     base: { range: 138, cooldown: 0.70, projSpeed: 480, dmg: { fisico: 114, magico: 0 },
             splash: 50 }
+  },
+
+  /* A decima quinta. Hibrida de alcance longo, sem area: e a torre que acerta
+   * de longe e nao tem afixo que a segure. A perfuracao 1 e um aceno a besta
+   * da arte, nao a identidade dela -- perfurar de verdade e da Balista. */
+  'arqueira+templo': {
+    name: 'Sentinela Rúnica', color: '#e9d5ff', shape: 'arqueira',
+    blurb: 'Precisão híbrida de longe, atravessa um alvo',
+    base: { range: 170, cooldown: 0.89, projSpeed: 720, dmg: { fisico: 55, magico: 55 },
+            pierce: 1 }
   }
 };
 

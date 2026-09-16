@@ -393,6 +393,7 @@ sendo uma escolha de terreno, só que uma escolha de verdade em vez de um sortei
 | Altar + Templo | **Oráculo Rúnico** — dano híbrido constante, sem ponto fraco | ✅ |
 | Bombarda + Glacial | **Bombarda Glacial** — estilhaços de gelo em área, tudo sai lento | ✅ |
 | Arqueira + Bombarda | **Morteiro Ligeiro** — estouros pequenos e seguidos, sem pausa | ✅ |
+| Arqueira + Templo | **Sentinela Rúnica** — precisão híbrida de longe, atravessa um alvo | ✅ |
 
 ### As duas famílias
 
@@ -421,7 +422,12 @@ Auditei os nove mapeamentos com essa métrica e só esse estava errado. Um limit
 honesto dela: **cristal não separa Templo de Glacial**, porque o Vórtice base
 tem 24,8% de cristal (gelo). O que decide é a madeira.
 
-São **13 de 15** receitas, **12 com arte**. Só falta a Forja de Guerra.
+São **14 de 15** receitas, **13 com arte**. Falta a arte da Forja de Guerra
+(bombarda + templo) e a última receita, Glacial + Templo.
+
+A Sentinela Rúnica é a única arte que aponta para **baixo**, então leva
+`angleOffset: -Math.PI / 2`. As que apontam para cima usam `+Math.PI / 2`, e as
+duas que disparam para a esquerda usam `Math.PI`.
 
 O Canhão Rúnico nasceu dessa leva: não existia como receita, e foi criado porque
 a arte de Altar + Bombarda chegou. É o extremo curto da curva — **118 de alcance,
