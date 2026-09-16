@@ -394,7 +394,7 @@ sendo uma escolha de terreno, só que uma escolha de verdade em vez de um sortei
 | Bombarda + Glacial | **Bombarda Glacial** — estilhaços de gelo em área, tudo sai lento | ✅ |
 | Arqueira + Bombarda | **Morteiro Ligeiro** — estouros pequenos e seguidos, sem pausa | ✅ |
 | Arqueira + Templo | **Sentinela Rúnica** — precisão híbrida de longe, atravessa um alvo | ✅ |
-| Glacial + Templo | **Estela Glacial** — congela um alvo por vez, com as duas escolas | vetor |
+| Glacial + Templo | **Estela Glacial** — congela um alvo por vez, com as duas escolas | ✅ |
 
 ### As duas famílias
 
@@ -423,9 +423,9 @@ Auditei os nove mapeamentos com essa métrica e só esse estava errado. Um limit
 honesto dela: **cristal não separa Templo de Glacial**, porque o Vórtice base
 tem 24,8% de cristal (gelo). O que decide é a madeira.
 
-São **as 15 combinações possíveis**, 14 com arte. Falta só a da Estela Glacial
-(glacial + templo) — a receita já existe e funciona, desenhada em vetor até a
-arte chegar.
+São **as 15 combinações possíveis, todas com arte**.
+
+![As 15 fusões, todas no quadro de tiro](docs/todas-as-fusoes.png)
 
 ### A fusão sobe até o nível 4
 
