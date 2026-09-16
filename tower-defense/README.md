@@ -396,9 +396,12 @@ sendo uma escolha de terreno, só que uma escolha de verdade em vez de um sortei
 ![As quatro fusões do Altar: parada em cima, tiro embaixo](docs/altar-arte.png)
 
 A arte chegou em famílias: primeiro a **Balista** com as cinco outras torres,
-depois o **Altar** com quatro. Altar + Balista pertence às duas — ficou com a
-arte da família do Altar, que é a mais recente e deixa o orbe sempre à esquerda
-do disco.
+depois o **Altar** com quatro. Altar + Balista pertence às duas e foi desenhada
+duas vezes — ficou com a da **família da Balista**, de disco de madeira.
+
+Eu tinha trocado pela versão do Altar, por coerência de disco, sem perguntar. A
+troca foi desfeita a pedido. A regra que fica: quem manda na arte é quem a
+desenha; eu meço DPS, não gosto.
 
 São **10 de 15** receitas. Só faltam arte a Forja de Guerra e a Caçadora de Gelo.
 
