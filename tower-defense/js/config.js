@@ -296,7 +296,7 @@ const TOWER_TYPES = {
 
 /* ------------------------------------------------------------- fusoes ---- */
 
-/* Receitas curadas: 11 das 15 combinacoes possiveis. Exigem duas torres nivel 3
+/* Receitas curadas: 12 das 15 combinacoes possiveis. Exigem duas torres nivel 3
  * em QUALQUER lugar do tabuleiro -- a exigencia de adjacencia era minha e
  * estava errada. A torre fundida ocupa a celula alvo e LIBERA a outra celula,
  * entao o labirinto muda e fundir e tambem uma decisao de terreno.
@@ -403,6 +403,16 @@ const FUSIONS = {
     name: 'Oráculo Rúnico', color: '#c7d2fe', shape: 'templo',
     blurb: 'Dano híbrido constante, sem ponto fraco',
     base: { range: 165, cooldown: 0.98, projSpeed: 700, dmg: { fisico: 68, magico: 82 } }
+  },
+
+  /* O par de area e lentidao pelo lado FISICO. O Prisma Congelante
+   * (altar+glacial) ja ocupa esse papel pelo lado magico, com 140 de alcance e
+   * 132 de DPS; este fica mais perto e mais forte, como manda a curva. */
+  'bombarda+glacial': {
+    name: 'Bombarda Glacial', color: '#0ea5e9', shape: 'bombarda',
+    blurb: 'Estilhaços de gelo em área, tudo sai lento',
+    base: { range: 105, cooldown: 1.30, projSpeed: 360, dmg: { fisico: 120, magico: 75 },
+            splash: 75, slow: 0.40, slowDur: 2.0 }
   }
 };
 

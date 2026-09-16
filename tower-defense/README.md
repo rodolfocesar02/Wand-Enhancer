@@ -385,12 +385,13 @@ sendo uma escolha de terreno, só que uma escolha de verdade em vez de um sortei
 | Altar + Glacial | **Prisma Congelante** — magia em área que congela o grupo | vetor |
 | Bombarda + Templo | **Forja de Guerra** — explosão híbrida | vetor |
 | Altar + Balista | **Lança Etérea** — perfura a fila com dano mágico puro | ✅ |
-| Arqueira + Glacial | **Caçadora de Gelo** — tiro rápido que mantém tudo lento | vetor |
+| Arqueira + Glacial | **Caçadora de Gelo** — tiro rápido que mantém tudo lento | ✅ |
 | Balista + Glacial | **Lança do Inverno** — perfura a fila e deixa todos lentos | ✅ |
 | Balista + Templo | **Balista Gêmea** — dois virotes, um de cada escola | ✅ |
 | Arqueira + Balista | **Balista de Repetição** — cadência de arqueira, virote de balista | ✅ |
 | Altar + Bombarda | **Canhão Rúnico** — explosão puramente mágica, bem de perto | ✅ |
 | Altar + Templo | **Oráculo Rúnico** — dano híbrido constante, sem ponto fraco | ✅ |
+| Bombarda + Glacial | **Bombarda Glacial** — estilhaços de gelo em área, tudo sai lento | ✅ |
 
 ### As duas famílias
 
@@ -419,7 +420,7 @@ Auditei os nove mapeamentos com essa métrica e só esse estava errado. Um limit
 honesto dela: **cristal não separa Templo de Glacial**, porque o Vórtice base
 tem 24,8% de cristal (gelo). O que decide é a madeira.
 
-São **11 de 15** receitas. Só faltam arte a Forja de Guerra e a Caçadora de Gelo.
+São **12 de 15** receitas, **11 com arte**. Só falta a Forja de Guerra.
 
 O Canhão Rúnico nasceu dessa leva: não existia como receita, e foi criado porque
 a arte de Altar + Bombarda chegou. É o extremo curto da curva — **118 de alcance,
