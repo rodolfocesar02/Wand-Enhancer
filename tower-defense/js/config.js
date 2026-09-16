@@ -90,7 +90,15 @@ const CONFIG = {
    * coisa certa: a torre que so acompanha a rota sai rapido, e o tijolo que
    * FECHA o caminho e obra grande. Num labirinto montado coluna por coluna,
    * quem paga caro e sempre a ultima peca -- a que fecha. */
-  obraPorPasso: 0.85
+  obraPorPasso: 0.85,
+
+  /* Duracao MINIMA do quadro de tiro, em segundos.
+   *
+   * A janela era 30% da recarga, o que funciona para torre lenta e some para
+   * torre rapida: a Balista de Repeticao recarrega em 0,62s, entao o quadro
+   * de tiro durava 0,19s -- e a Arqueira Runica, 0,13s. Com um piso absoluto,
+   * duas imagens bastam para o tiro gritar mesmo em cadencia alta. */
+  lampejo: 0.17
 };
 
 /* O canvas é mais alto que o tabuleiro: a faixa de baixo carrega as magias,

@@ -404,9 +404,21 @@ A curva alcance × DPS vale dentro da família: **215/101, 195/108, 175/116**. M
 perto, mais forte — a mesma regra das torres base.
 
 Os dois quadros de cada uma vieram em par (parada / atirando), não em trio como
-as torres base. O `cycle: [0, 1, 0]` transforma isso num **lampejo**: o quadro de
-tiro aparece só nos primeiros 30% da recarga e some depois, em vez de ficar
-congelado com a boca acesa a partida inteira.
+as torres base — e dois bastam, porque a 64px o terceiro quadro não se distingue.
+O `cycle: [0, 1, 0]` transforma isso num **lampejo** em vez de deixar a boca
+acesa a partida inteira.
+
+**Dois quadros só não gritam sozinhos**, e isso foi medido. A janela do quadro de
+tiro era 30% da recarga, o que funciona para torre lenta e some para torre
+rápida: na Balista de Repetição (recarga 0,62 s) durava 0,19 s, e na Arqueira
+Rúnica 0,13 s — oito quadros a 60 fps. Agora há um piso absoluto de 0,17 s
+(`CONFIG.lampejo`).
+
+O resto do grito não custa arte nenhuma: no instante do tiro a peça **recua no
+eixo do disparo, incha 7,5% e leva um clarão aditivo por cima dela mesma**,
+tudo decaindo em 0,2 s. Medido por diferença de pixels contra o mesmo quadro sem
+coice: **+51% de brilho**, 24% da área da célula muda, pico de diferença de 234
+em 255.
 
 O Morteiro Pesado tem `angleOffset: Math.PI` porque a arte dispara o canhão para
 a **esquerda** enquanto o virote aponta para a direita. Girar 180° faz o clarão

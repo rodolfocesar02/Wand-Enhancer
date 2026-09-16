@@ -341,12 +341,31 @@ const Renderer = {
     if (set) {
       // Sprite pintado: o disco de pedra é circular, então girar a peça
       // inteira em direção ao alvo não quebra a leitura da base.
+      //
+      // Com dois quadros só, a troca de imagem sozinha não grita a 64px. O
+      // coice faz o resto e não custa arte nenhuma: a peça recua no eixo do
+      // tiro, incha um pouco e leva um clarão aditivo por cima dela mesma.
       const size = (t * CONFIG.spriteOverflow) / set.discRatio;
+      const coice = Math.max(0, Math.min(1, tower.recoil));
+      const img = set.images[this.spriteFrame(tower, set)];
+
       ctx.save();
       ctx.translate(tower.x, tower.y);
+      if (coice > 0) {
+        ctx.translate(-Math.cos(tower.angle) * coice * 3.5,
+                      -Math.sin(tower.angle) * coice * 3.5);
+      }
       // angleOffset corrige a arte que aponta para cima em vez da direita.
       ctx.rotate(tower.angle + (set.angleOffset || 0));
-      ctx.drawImage(set.images[this.spriteFrame(tower, set)], -size / 2, -size / 2, size, size);
+
+      const lado = size * (1 + coice * 0.075);
+      ctx.drawImage(img, -lado / 2, -lado / 2, lado, lado);
+
+      if (coice > 0.05) {
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = coice * 0.42;
+        ctx.drawImage(img, -lado / 2, -lado / 2, lado, lado);
+      }
       ctx.restore();
     } else {
       ctx.fillStyle = tower.fused ? '#2a1f3d' : '#1e293b';
@@ -526,7 +545,11 @@ const Renderer = {
     let state = 0;
     if (tower.cooldown > 0) {
       const total = tower.fullCooldown || tower.stats.cooldown;
-      state = (tower.cooldown / total) > 0.7 ? 1 : 2;
+      // Janela do quadro de tiro: 30% da recarga, mas nunca menos que o
+      // lampejo mínimo. Só a proporção fazia o tiro sumir em torre rápida --
+      // 0,13s na Arqueira Rúnica, que a 60 quadros por segundo são 8 quadros.
+      const janela = Math.max(CONFIG.lampejo, total * 0.30);
+      state = (total - tower.cooldown) < janela ? 1 : 2;
     }
     // cycle mapeia estado -> quadro, porque nem toda torre tem três desenhos.
     return set.cycle ? set.cycle[state] : state;
