@@ -47,13 +47,17 @@ const Waves = {
       }
     };
 
-    if (this.isBossWave(wave)) {
-      const bosses = wave === CONFIG.wavesPerRun ? 2 : 1;
-      push('chefe', bosses, 2.4, wave >= 20 ? 'runico' : 'comum');
-      push('tanque', 2 + Math.floor(wave / 6), 0.95);
-      push('bruxo', 2 + Math.floor(wave / 8), 0.8);
-      push('veloz', 5 + Math.floor(wave / 4), 0.32);
-      return queue;
+    /* A onda de chefe SOMA, nao substitui.
+     *
+     * Ela trocava a onda normal por uma composicao menor mais o chefe, e o
+     * resultado era uma queda: medido, a onda 20 tinha 5% MENOS vida total que
+     * a 19, e a 21 vinha 60% acima. O chefe era um alivio no meio da subida,
+     * exatamente o contrario do que a palavra CHEFE promete no aviso. */
+    const chefe = this.isBossWave(wave);
+
+    if (chefe) {
+      const quantos = wave === CONFIG.wavesPerRun ? 2 : 1;
+      push('chefe', quantos, 2.4, wave >= 20 ? 'runico' : 'comum');
     }
 
     push('grunt', 5 + Math.floor(wave * 1.2), Math.max(0.3, 0.74 - wave * 0.016));

@@ -662,6 +662,29 @@ Muralha é a mais interessante das quatro porque conversa com a mecânica centra
 ela reescreve a rota sem custar ouro. Usa a mesma validação das torres — se
 selaria o mapa, a magia não é gasta.
 
+## A onda de chefe é um pico, não um alívio
+
+Ela somava errado. A composição de chefe **substituía** a onda normal por uma
+menor, mais o chefe — e o resultado, medido, era uma queda:
+
+| Onda | Vida total | Antes | Depois |
+|---|---:|---:|---:|
+| 19 | 28.142 | +14% | +14% |
+| **20 (chefe)** | 26.763 → 46.505 | **−5%** | **+65%** |
+| 21 | 42.732 | +60% | −8% |
+
+O chefe era um descanso no meio da subida, exatamente o contrário do que o aviso
+"CHEFE" promete. Agora a onda de chefe é a onda normal **mais** o chefe.
+
+A primeira correção somou também a escolta antiga e passou do ponto: a onda 10
+saltou 195% e o bot sem desbloqueio nenhum caía da onda 21 para a 10. Onda normal
++ chefe, sem escolta extra, é o suficiente — o chefe já é o pico.
+
+**O custo dessa correção, declarado:** a expedição de meio de jogo (4 melhorias
+compradas) passou de *vencer com 1 vida* para *cair na onda 25*. Era uma margem
+de um fio; agora falta um fio. Quem tem tudo desbloqueado continua vencendo com
+36 vidas.
+
 ## Expedições e meta-progressão
 
 Uma expedição tem **25 ondas**. Terminando ou perdendo, o XP acumulado vai para o
