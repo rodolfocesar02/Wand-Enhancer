@@ -389,6 +389,22 @@ sendo uma escolha de terreno, só que uma escolha de verdade em vez de um sortei
 | Balista + Glacial | **Lança do Inverno** — perfura a fila e deixa todos lentos | ✅ |
 | Balista + Templo | **Balista Gêmea** — dois virotes, um de cada escola | ✅ |
 | Arqueira + Balista | **Balista de Repetição** — cadência de arqueira, virote de balista | ✅ |
+| Altar + Bombarda | **Canhão Rúnico** — explosão puramente mágica, bem de perto | ✅ |
+
+### As duas famílias
+
+![As quatro fusões do Altar: parada em cima, tiro embaixo](docs/altar-arte.png)
+
+A arte chegou em famílias: primeiro a **Balista** com as cinco outras torres,
+depois o **Altar** com quatro. Altar + Balista pertence às duas — ficou com a
+arte da família do Altar, que é a mais recente e deixa o orbe sempre à esquerda
+do disco.
+
+São **10 de 15** receitas. Só faltam arte a Forja de Guerra e a Caçadora de Gelo.
+
+O Canhão Rúnico nasceu dessa leva: não existia como receita, e foi criado porque
+a arte de Altar + Bombarda chegou. É o extremo curto da curva — **118 de alcance,
+183 de DPS**, o menor alcance e o maior dano das dez.
 
 ### A família da Balista
 

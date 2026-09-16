@@ -296,7 +296,7 @@ const TOWER_TYPES = {
 
 /* ------------------------------------------------------------- fusoes ---- */
 
-/* Receitas curadas: 9 das 15 combinacoes possiveis. Exigem duas torres nivel 3
+/* Receitas curadas: 10 das 15 combinacoes possiveis. Exigem duas torres nivel 3
  * em QUALQUER lugar do tabuleiro -- a exigencia de adjacencia era minha e
  * estava errada. A torre fundida ocupa a celula alvo e LIBERA a outra celula,
  * entao o labirinto muda e fundir e tambem uma decisao de terreno.
@@ -378,6 +378,18 @@ const FUSIONS = {
     blurb: 'Cadência de arqueira com virote de balista',
     base: { range: 175, cooldown: 0.62, projSpeed: 760, dmg: { fisico: 72, magico: 0 },
             pierce: 2 }
+  },
+
+  /* --- familia do Altar -------------------------------------------------
+   *
+   * O Altar ja participava de tres receitas; com a arte da familia dele
+   * chegando, faltava so o par com a Bombarda. Este e o extremo curto da
+   * curva: o menor alcance de todas as nove e, por isso, o maior DPS. */
+  'altar+bombarda': {
+    name: 'Canhão Rúnico', color: '#818cf8', shape: 'bombarda',
+    blurb: 'Explosão puramente mágica, bem de perto',
+    base: { range: 118, cooldown: 1.15, projSpeed: 380, dmg: { fisico: 0, magico: 210 },
+            splash: 70 }
   }
 };
 
