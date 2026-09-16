@@ -392,6 +392,7 @@ sendo uma escolha de terreno, só que uma escolha de verdade em vez de um sortei
 | Altar + Bombarda | **Canhão Rúnico** — explosão puramente mágica, bem de perto | ✅ |
 | Altar + Templo | **Oráculo Rúnico** — dano híbrido constante, sem ponto fraco | ✅ |
 | Bombarda + Glacial | **Bombarda Glacial** — estilhaços de gelo em área, tudo sai lento | ✅ |
+| Arqueira + Bombarda | **Morteiro Ligeiro** — estouros pequenos e seguidos, sem pausa | ✅ |
 
 ### As duas famílias
 
@@ -420,7 +421,7 @@ Auditei os nove mapeamentos com essa métrica e só esse estava errado. Um limit
 honesto dela: **cristal não separa Templo de Glacial**, porque o Vórtice base
 tem 24,8% de cristal (gelo). O que decide é a madeira.
 
-São **12 de 15** receitas, **11 com arte**. Só falta a Forja de Guerra.
+São **13 de 15** receitas, **12 com arte**. Só falta a Forja de Guerra.
 
 O Canhão Rúnico nasceu dessa leva: não existia como receita, e foi criado porque
 a arte de Altar + Bombarda chegou. É o extremo curto da curva — **118 de alcance,
@@ -456,9 +457,13 @@ tudo decaindo em 0,2 s. Medido por diferença de pixels contra o mesmo quadro se
 coice: **+51% de brilho**, 24% da área da célula muda, pico de diferença de 234
 em 255.
 
-O Morteiro Pesado tem `angleOffset: Math.PI` porque a arte dispara o canhão para
-a **esquerda** enquanto o virote aponta para a direita. Girar 180° faz o clarão
-apontar para o alvo — e o clarão é o que o olho segue, não o virote parado.
+Duas têm `angleOffset: Math.PI` porque a arte dispara o canhão para a
+**esquerda** enquanto a outra arma aponta para a direita: o Morteiro Pesado e o
+Morteiro Ligeiro. Girar 180° faz o clarão apontar para o alvo.
+
+No Morteiro Ligeiro isso foi **medido**, não julgado: somando a luz que acende
+entre o quadro parado e o de tiro, a metade do canhão acende **4,1×** mais que a
+metade do arco. É ela que o olho segue.
 
 **A regra de balanceamento é medida, não chutada:** o DPS da fundida fica entre
 **80% e 92%** da soma das duas torres nível 3 que ela consome — soma das

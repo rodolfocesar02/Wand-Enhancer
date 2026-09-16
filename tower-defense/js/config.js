@@ -296,7 +296,7 @@ const TOWER_TYPES = {
 
 /* ------------------------------------------------------------- fusoes ---- */
 
-/* Receitas curadas: 12 das 15 combinacoes possiveis. Exigem duas torres nivel 3
+/* Receitas curadas: 13 das 15 combinacoes possiveis. Exigem duas torres nivel 3
  * em QUALQUER lugar do tabuleiro -- a exigencia de adjacencia era minha e
  * estava errada. A torre fundida ocupa a celula alvo e LIBERA a outra celula,
  * entao o labirinto muda e fundir e tambem uma decisao de terreno.
@@ -413,6 +413,15 @@ const FUSIONS = {
     blurb: 'Estilhaços de gelo em área, tudo sai lento',
     base: { range: 105, cooldown: 1.30, projSpeed: 360, dmg: { fisico: 120, magico: 75 },
             splash: 75, slow: 0.40, slowDur: 2.0 }
+  },
+
+  /* O irmao rapido do Morteiro Pesado: area menor, cadencia quase tres vezes
+   * maior. A Arqueira entra com o ritmo, a Bombarda com o estouro. */
+  'arqueira+bombarda': {
+    name: 'Morteiro Ligeiro', color: '#bef264', shape: 'bombarda',
+    blurb: 'Estouros pequenos e seguidos, sem pausa',
+    base: { range: 138, cooldown: 0.70, projSpeed: 480, dmg: { fisico: 114, magico: 0 },
+            splash: 50 }
   }
 };
 
