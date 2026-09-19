@@ -8,6 +8,7 @@
   Meta.load();
   SpriteSheet.load();
   MobSheet.load();
+  VFXSheet.load();
   Terrain.load();
   Trail.init();
   Perigo.init();

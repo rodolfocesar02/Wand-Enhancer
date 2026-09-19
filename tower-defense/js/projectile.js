@@ -11,6 +11,18 @@
  * conhecido para que bombardas ainda explodam ali. */
 
 class Projectile {
+  /* Que familia de efeito o impacto usa.
+   *
+   * A escolha sai do que o projetil FAZ, nao do nome da torre: qualquer fusao
+   * que herde lentidao ganha gelo e qualquer uma que vire magica ganha
+   * arcano, sem lista de casos para manter. Sao 15 fusoes com quatro niveis
+   * cada -- uma lista dessas envelheceria na primeira torre nova.
+   */
+  static arteDe(stats) {
+    if (stats.slow) return 'gelo';
+    return Damage.dominant(stats.dmg) === DAMAGE.MAGICO ? 'arcano' : 'fogo';
+  }
+
   constructor(x, y, target, stats, color, mods) {
     this.x = x;
     this.y = y;
@@ -88,7 +100,11 @@ class Projectile {
     const s = this.stats;
 
     if (s.splash) {
-      effects.push({ x: this.x, y: this.y, radius: s.splash, life: 0.24, max: 0.24, color: this.color });
+      // 0,24s bastava para o anel geometrico; a arte tem quatro quadros e
+      // precisa de tempo para eles serem lidos como sequencia.
+      effects.push({ x: this.x, y: this.y, radius: s.splash, life: 0.38, max: 0.38,
+                     color: this.color, arte: Projectile.arteDe(s),
+                     giro: Math.random() * 6.2832, escala: 1.0 });
       for (const e of enemies) {
         if (e.dead || e.escaped) continue;
         if (Math.hypot(e.x - this.x, e.y - this.y) <= s.splash + e.radius) {
@@ -104,7 +120,17 @@ class Projectile {
     if (t && !t.dead && !t.escaped) {
       this.hitSet.push(t);
       onHit(t, t.takeHit(s.dmg, this.mods), s.dmg);
-      if (s.slow) t.applySlow(s.slow, s.slowDur);
+      if (s.slow) {
+        t.applySlow(s.slow, s.slowDur);
+        // O congelamento nao tinha arte nenhuma: so o disco ciano por baixo.
+        // O estouro no instante do acerto e o que separa "levou um tiro de
+        // gelo" de "ficou lento por algum motivo".
+        if (effects.length < 90) {
+          effects.push({ x: t.x, y: t.y, radius: t.radius, life: 0.34, max: 0.34,
+                         color: '#7dd3fc', arte: 'gelo',
+                         giro: Math.random() * 6.2832, escala: 2.1, espalha: 0.45 });
+        }
+      }
     }
 
     // Sobrou perfuracao: segue reto na direcao em que chegou. No impacto o

@@ -475,6 +475,9 @@ class Game {
     this.notifyCell(FUSIONS[key].name, tower.c, tower.r, FUSIONS[key].color);
     this.effects.push({ x: tower.x, y: tower.y, radius: 70, life: 0.6, max: 0.6,
                         color: FUSIONS[key].color, heavy: true });
+    this.effects.push({ x: tower.x, y: tower.y, radius: 46, life: 0.7, max: 0.7,
+                        color: FUSIONS[key].color, arte: 'arcano',
+                        giro: Math.random() * 6.2832, escala: 1.1, espalha: 0.5 });
     this.emit();
     return true;
   }
@@ -711,6 +714,11 @@ class Game {
       this.notifyCell('Torre destruída', torre.c, torre.r, '#f87171');
       this.effects.push({ x: torre.x, y: torre.y, radius: CONFIG.tile * 0.7,
                           life: 0.5, max: 0.5, color: '#f87171', heavy: true });
+      // Pedra e madeira de verdade voando: e o unico retorno que diz o que
+      // acabou de acontecer com a celula, porque a torre some no mesmo quadro.
+      this.effects.push({ x: torre.x, y: torre.y, radius: CONFIG.tile * 0.5,
+                          life: 0.55, max: 0.55, color: '#cbd5e1', arte: 'detrito',
+                          giro: Math.random() * 6.2832, escala: 1.15, espalha: 0.45 });
       this.effects.push({ kind: 'shards', x: torre.x, y: torre.y, radius: CONFIG.tile * 0.4,
                           life: 0.45, max: 0.45, color: '#94a3b8' });
       this.emit();
@@ -718,9 +726,16 @@ class Game {
     }
 
     if (this.effects.length < 90 && Math.random() < 0.18) {
-      this.effects.push({ kind: 'spark', x: torre.x, y: torre.y,
-                          angle: Math.atan2(inimigo.y - torre.y, inimigo.x - torre.x),
+      // A lasca sai do lado do inimigo, nao do centro da torre: assim da para
+      // ver QUEM esta batendo sem seguir a linha tracejada.
+      const a = Math.atan2(inimigo.y - torre.y, inimigo.x - torre.x);
+      this.effects.push({ kind: 'spark', x: torre.x, y: torre.y, angle: a,
                           life: 0.16, max: 0.16, color: '#cbd5e1', big: false });
+      this.effects.push({ x: torre.x + Math.cos(a) * CONFIG.tile * 0.3,
+                          y: torre.y + Math.sin(a) * CONFIG.tile * 0.3,
+                          radius: CONFIG.tile * 0.18, life: 0.3, max: 0.3,
+                          color: '#cbd5e1', arte: 'detrito',
+                          giro: Math.random() * 6.2832, escala: 1.6, espalha: 0.7 });
     }
   }
 

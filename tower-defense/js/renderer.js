@@ -831,12 +831,46 @@ const Renderer = {
     }
   },
 
+  /* Quadro pintado no lugar do circulo geometrico.
+   *
+   * O quadro sai da fracao de vida, nao de um timer proprio: uma explosao de
+   * 0,24s e um desabamento de 0,5s percorrem os mesmos quatro quadros e cada
+   * um termina junto com a propria duracao.
+   *
+   * O giro e sorteado no nascimento do efeito. Sem ele, dez bombardas
+   * seguidas desenham a MESMA bola de fogo na mesma orientacao e o olho
+   * percebe a repeticao antes de perceber o efeito.
+   *
+   * Devolve false quando a arte ainda nao carregou, e ai o desenho
+   * geometrico antigo assume -- o jogo nunca fica sem retorno visual.
+   */
+  efeitoArte(ctx, fx, k) {
+    const img = VFXSheet.quadro(fx.arte, k);
+    if (!img) return false;
+
+    const cresce = 0.74 + (1 - k) * (fx.espalha === undefined ? 0.6 : fx.espalha);
+    const lado = fx.radius * 2 * (fx.escala || 1.7) * cresce;
+
+    ctx.translate(fx.x, fx.y);
+    if (fx.giro) ctx.rotate(fx.giro);
+    // Segura a opacidade cheia e so apaga no fim: o desbotar ja esta pintado
+    // nos quadros, e desbotar duas vezes some com o efeito no meio da vida.
+    ctx.globalAlpha = Math.min(1, k * 2.2);
+    if (VFXSheet.aditiva(fx.arte)) ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(img, -lado / 2, -lado / 2, lado, lado);
+    return true;
+  },
+
   effects(ctx, game) {
     for (const fx of game.effects) {
       const k = Math.max(0, fx.life / fx.max);
       ctx.save();
 
-      if (fx.kind === 'muzzle') {
+      if (fx.arte && this.efeitoArte(ctx, fx, k)) {
+        ctx.restore();
+        continue;
+
+      } else if (fx.kind === 'muzzle') {
         // Cone curto na boca de tiro: diz de onde saiu o disparo mesmo quando
         // o projétil já saiu do quadro.
         ctx.globalAlpha = k;
