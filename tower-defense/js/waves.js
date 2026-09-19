@@ -33,6 +33,33 @@ const Waves = {
     return wave === 10 || wave === 20 || wave === CONFIG.wavesPerRun;
   },
 
+  /* Quem ocupa cada corrente a partir de qual onda.
+   *
+   * Esta e a decisao que fez o elenco caber sem refazer o balanceamento:
+   * o bicho novo SUBSTITUI o antigo na corrente dele em vez de abrir uma
+   * corrente propria. Uma corrente nova somaria vida em cima de uma onda ja
+   * calibrada; a substituicao mantem as contagens de push() intactas e o
+   * unico delta e os ~10% de vida base entre um degrau e o seguinte.
+   *
+   * O espacamento e o ponto todo: cara nova nas ondas 1, 3, 5, 6, 7, 8, 10,
+   * 12, 14, 16, 18, 20, 21 e 25 -- nunca mais de tres ondas sem novidade
+   * numa corrida de 25. */
+  SUCESSORES: {
+    grunt:  [[21, 'demonio'], [14, 'cavaleiro'], [5, 'carnical']],
+    veloz:  [[8, 'aranha']],
+    bruxo:  [[16, 'necromante'], [10, 'arqueiro']],
+    tanque: [[18, 'golem'], [12, 'ogro']]
+  },
+
+  /* A lista de cada corrente esta em ordem decrescente de onda, entao o
+   * primeiro que couber e o mais avancado. */
+  tipoNaOnda(base, wave) {
+    const lista = this.SUCESSORES[base];
+    if (!lista) return base;
+    for (const [desde, tipo] of lista) if (wave >= desde) return tipo;
+    return base;
+  },
+
   /* Fila de spawns da onda: [{ type, affix, level, delay }] em ordem. */
   build(wave) {
     const level = this.levelFor(wave);
@@ -41,9 +68,10 @@ const Waves = {
     let cursor = wave * 3; // semente deterministica: mesma onda, mesma mistura
 
     const push = (type, count, gap, forcedAffix) => {
+      const real = this.tipoNaOnda(type, wave);
       for (let i = 0; i < count; i++) {
         const affix = forcedAffix || pool[cursor++ % pool.length];
-        queue.push({ type: type, affix: affix, level: level, delay: gap });
+        queue.push({ type: real, affix: affix, level: level, delay: gap });
       }
     };
 
@@ -80,10 +108,21 @@ const Waves = {
     for (const a of pool) {
       if (a !== 'comum' && seen.indexOf(a) === -1) seen.push(a);
     }
+    // Quem ESTREIA nesta onda. O jogador so consegue se preparar para o
+    // bicho novo se souber que ele vem -- e a estreia e o unico momento em
+    // que a corrente muda de comportamento.
+    const estreia = [];
+    for (const base of Object.keys(this.SUCESSORES)) {
+      for (const [desde, tipo] of this.SUCESSORES[base]) {
+        if (desde === wave) estreia.push(ENEMY_TYPES[tipo].name);
+      }
+    }
+
     return {
       boss: this.isBossWave(wave),
       level: this.levelFor(wave),
-      affixes: seen.map(k => AFFIXES[k].name)
+      affixes: seen.map(k => AFFIXES[k].name),
+      estreia: estreia
     };
   }
 };

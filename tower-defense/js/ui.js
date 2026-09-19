@@ -493,8 +493,11 @@ const UI = {
       text = 'Toque no mapa para lançar ' + SPELLS[g.spellbook.pending].name + '.';
     } else if (g.screen === 'playing' && !g.waveInProgress && g.restTimer > 0) {
       const next = Waves.preview(g.wave + 1);
+      // A estreia vem antes dos afixos: e a unica informacao da linha que o
+      // jogador nunca viu antes, e ele tem o intervalo para reagir a ela.
       text = 'Onda ' + (g.wave + 1) + ' em ' + Math.ceil(g.restTimer) + 's' +
              (next.boss ? ' — CHEFE' : '') +
+             (next.estreia.length ? ' — estreia: ' + next.estreia.join(', ') : '') +
              (next.affixes.length ? ' — ' + next.affixes.join(', ') : '');
     } else {
       text = 'Segure uma torre para evoluir. Amarelo = dano físico, roxo = dano mágico.';

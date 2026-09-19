@@ -572,7 +572,56 @@ const ENEMY_TYPES = {
   bruxo:  { name: 'Bruxo',  hp: 120,  speed: 62,  gold: 18,  radius: 16, shape: 'estrela',
             color: '#f472b6', leak: 2, medo: 'cauteloso', paciencia: 5.6, ataque: 22 },
   chefe:  { name: 'Chefe',  hp: 1700, speed: 31,  gold: 170, radius: 29, shape: 'chefe',
-            color: '#f43f5e', leak: 6, medo: 'cauteloso', paciencia: 3.0, ataque: 170 }
+            color: '#f43f5e', leak: 6, medo: 'cauteloso', paciencia: 3.0, ataque: 170 },
+
+  /* --------------------------------------------------------- sucessores --
+   *
+   * Cinco tipos com variacao de COR em 25 ondas nao e elenco, e papel de
+   * parede: o jogador ve o mesmo bicho a partida inteira. Estes oito nao
+   * SOMAM correntes novas -- cada um ASSUME a corrente de um dos cinco a
+   * partir de uma onda (ver Waves.SUCESSORES). Somar correntes teria
+   * inflado a vida por onda e jogado fora todo o balanceamento medido; o
+   * jogador ganha uma cara nova a cada duas ondas e a curva nao se mexe.
+   *
+   * VIDA, OURO e LEAK sao identicos ao antecessor, de proposito.
+   *
+   * Duas tentativas antes desta erraram na mesma direcao. Com +10% de vida
+   * por degrau a onda 21 subiu 25% e a corrida de referencia sem meta caiu
+   * de 21 para 18 ondas; com +4% ainda subia 10% e caiu para 19. O degrau
+   * COMPOE ao longo da corrente, e a corrente do Grunt e a mais numerosa
+   * (5 + onda*1,2 chega a 35 bichos), entao um "so 10%" por bicho vira um
+   * salto na onda inteira -- e quem paga e o jogador sem meta.
+   *
+   * O pedido era VARIEDADE, nao dificuldade. Entao a curva fica onde estava
+   * e a identidade de cada bicho sai dos mostradores que nao a movem:
+   * paciencia (quando cava a parede), medo (por onde roteia), ataque
+   * (quanto machuca a torre) e raio. Subir a dificuldade continua possivel,
+   * mas e uma decisao separada e explicita, nao um efeito colateral da arte.
+   */
+
+  // corrente do Grunt: 5 -> 14 -> 21
+  carnical:  { name: 'Carniçal',  hp: 62,  speed: 59,  gold: 8,   radius: 15, shape: 'triangulo',
+               color: '#cbd5e1', leak: 1, medo: 'afoito',    paciencia: 6.0, ataque: 12 },
+  cavaleiro: { name: 'Cavaleiro', hp: 62,  speed: 53,  gold: 8,   radius: 16, shape: 'triangulo',
+               color: '#a8a29e', leak: 1, medo: 'normal',    paciencia: 5.4, ataque: 16 },
+  demonio:   { name: 'Demônio',   hp: 62,  speed: 60,  gold: 8,   radius: 16, shape: 'triangulo',
+               color: '#fb923c', leak: 1, medo: 'afoito',    paciencia: 4.6, ataque: 20 },
+
+  // corrente do Veloz: 8
+  aranha:    { name: 'Aranha',    hp: 42,  speed: 108, gold: 11,  radius: 12, shape: 'losango',
+               color: '#a3e635', leak: 1, medo: 'afoito',    paciencia: 10.5, ataque: 6 },
+
+  // corrente do Bruxo: 10 -> 16
+  arqueiro:  { name: 'Arqueiro',  hp: 120, speed: 64,  gold: 18,  radius: 15, shape: 'estrela',
+               color: '#e879f9', leak: 2, medo: 'cauteloso', paciencia: 5.2, ataque: 24 },
+  necromante:{ name: 'Necromante',hp: 120, speed: 59,  gold: 18,  radius: 16, shape: 'estrela',
+               color: '#c084fc', leak: 2, medo: 'cauteloso', paciencia: 4.8, ataque: 28 },
+
+  // corrente do Tanque: 12 -> 18
+  ogro:      { name: 'Ogro',      hp: 245, speed: 35,  gold: 24,  radius: 21, shape: 'hexagono',
+               color: '#94a3b8', leak: 2, medo: 'afoito',    paciencia: 3.2, ataque: 70 },
+  golem:     { name: 'Golem',     hp: 245, speed: 32,  gold: 24,  radius: 22, shape: 'hexagono',
+               color: '#78716c', leak: 2, medo: 'afoito',    paciencia: 2.6, ataque: 88 }
 };
 
 /* Rotulo legivel de cada classe, usado na dica do jogo. */
