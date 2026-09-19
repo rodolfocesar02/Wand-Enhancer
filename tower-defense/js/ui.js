@@ -229,8 +229,14 @@ const UI = {
       const btn = document.createElement('button');
       btn.className = 'shop-chip';
       btn.title = def.blurb;
+      // O quadradinho de cor dizia "esta torre e verde", nao "esta torre e
+      // uma arqueira". Com seis torres desbloqueadas o jogador escolhia por
+      // posicao decorada, nao por reconhecimento. A cor continua na borda.
+      const arte = IconSheet.url('torre', key);
       btn.innerHTML =
-        '<span class="swatch" style="background:' + def.color + '"></span>' +
+        (arte ? '<span class="swatch art" style="background-image:url(' + arte +
+                ');border-color:' + def.color + '"></span>'
+              : '<span class="swatch" style="background:' + def.color + '"></span>') +
         '<span class="chip-name">' + def.name + '</span>' +
         '<span class="price">' + def.cost + '</span>' +
         '<span class="chip-key">' + (i + 1) + '</span>';

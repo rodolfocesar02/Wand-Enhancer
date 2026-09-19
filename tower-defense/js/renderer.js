@@ -804,8 +804,39 @@ const Renderer = {
 
   /* ------------------------------------------------------------ efeitos -- */
 
+  /* Qual arte o projetil usa.
+   *
+   * Sai do que ele FAZ, igual a familia do impacto: perfuracao vira virote,
+   * respingo vira bala, lentidao vira lasca de gelo, magico vira orbe. Com
+   * 15 fusoes de quatro niveis, uma tabela por torre envelheceria na
+   * primeira receita nova. */
+  arteDoTiro(p) {
+    const s = p.stats;
+    if (s.slow) return 'lasca';
+    if (s.splash) return 'bala';
+    if (s.pierce > 0) return 'virote';
+    if (Damage.isHybrid(s.dmg)) return 'runa';
+    return Damage.dominant(s.dmg) === DAMAGE.MAGICO ? 'orbe' : 'flecha';
+  },
+
   projectiles(ctx, game) {
     for (const p of game.projectiles) {
+      const img = IconSheet.get('tiro', this.arteDoTiro(p));
+      if (img) {
+        const ang = Math.atan2(p.piercing ? p.dirY : p.headingY,
+                               p.piercing ? p.dirX : p.headingX);
+        // A bala de canhao nao aponta para lugar nenhum -- girar uma esfera
+        // so faz a mecha piscar. As outras apontam para onde voam.
+        const redondo = p.stats.splash && !p.stats.slow;
+        const lado = p.stats.splash ? 19 : 17;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        if (!redondo) ctx.rotate(ang);
+        ctx.drawImage(img, -lado / 2, -lado / 2, lado, lado);
+        ctx.restore();
+        continue;
+      }
+
       const hybrid = Damage.isHybrid(p.stats.dmg);
       ctx.fillStyle = p.color;
 
@@ -990,14 +1021,30 @@ const Renderer = {
       this.roundRect(ctx, b.x, b.y, b.w, b.h, 11);
       ctx.stroke();
 
-      ctx.fillStyle = ready ? sl.def.color : '#3b4560';
-      this.roundRect(ctx, b.x + 10, b.y + 11, 22, 22, 6);
-      ctx.fill();
-      ctx.fillStyle = '#0b1020';
-      ctx.font = '700 13px ui-monospace, monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(sl.def.hotkey, b.x + 21, b.y + 22);
+      // A arte da magia no lugar do quadrado colorido. A tecla continua, em
+      // cima da arte: num telefone ninguem usa atalho, mas no teclado a
+      // letra e o que torna a magia utilizavel sem tirar a mao do jogo.
+      const icone = IconSheet.get('magia', sl.key);
+      if (icone) {
+        ctx.save();
+        ctx.globalAlpha = ready ? 1 : 0.42;
+        ctx.drawImage(icone, b.x + 8, b.y + 8, 28, 28);
+        ctx.restore();
+        ctx.fillStyle = ready ? '#e6ecff' : '#6b7a9c';
+        ctx.font = '700 10px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(sl.def.hotkey, b.x + 22, b.y + 40);
+      } else {
+        ctx.fillStyle = ready ? sl.def.color : '#3b4560';
+        this.roundRect(ctx, b.x + 10, b.y + 11, 22, 22, 6);
+        ctx.fill();
+        ctx.fillStyle = '#0b1020';
+        ctx.font = '700 13px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(sl.def.hotkey, b.x + 21, b.y + 22);
+      }
 
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';

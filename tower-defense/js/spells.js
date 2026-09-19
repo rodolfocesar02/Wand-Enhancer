@@ -72,7 +72,14 @@ const Spells = {
     const x = (cell.c + 0.5) * CONFIG.tile;
     const y = (cell.r + 0.5) * CONFIG.tile;
 
-    game.effects.push({ x: x, y: y, radius: def.radius, life: 0.5, max: 0.5, color: def.color, heavy: true });
+    // Quadro unico crescendo: a explosao do meteoro nao precisa de
+    // sequencia desenhada -- crescer e apagar o renderer ja faz, e o quadro
+    // unico custa um quarto do peso de quatro.
+    game.effects.push({ x: x, y: y, radius: def.radius, life: 0.62, max: 0.62,
+                        color: def.color, arte: 'meteoro',
+                        giro: Math.random() * 6.2832, escala: 1.0, espalha: 0.45 });
+    game.effects.push({ x: x, y: y, radius: def.radius, life: 0.5, max: 0.5,
+                        color: def.color, heavy: true });
 
     for (const e of game.enemies) {
       if (e.dead || e.escaped) continue;
@@ -101,6 +108,15 @@ const Spells = {
     game.rateBonus = def.rateBonus;
     game.rateTimer = def.duration;
     game.screenTint = { color: def.color, life: 0.5, max: 0.5 };
+    // O tingimento de tela sozinho dizia "algo aconteceu", nao "as SUAS
+    // torres ficaram mais rapidas". A aura em cada torre diz onde o bonus
+    // esta -- e a Furia dura 9s, tempo de olhar.
+    for (const t of game.towers) {
+      if (!t.pronta || t.destruida) continue;
+      game.effects.push({ x: t.x, y: t.y, radius: CONFIG.tile * 0.46,
+                          life: 0.5, max: 0.5, color: def.color, arte: 'furia',
+                          giro: Math.random() * 6.2832, escala: 0.78, espalha: 0.5 });
+    }
     return true;
   },
 
@@ -112,6 +128,10 @@ const Spells = {
     if (!game.grid.tryBlock(cell.c, cell.r, CELL.MURALHA, occupied)) return false;
 
     game.walls.push({ c: cell.c, r: cell.r, life: def.duration, max: def.duration });
+    game.effects.push({ x: (cell.c + 0.5) * CONFIG.tile, y: (cell.r + 0.5) * CONFIG.tile,
+                        radius: CONFIG.tile * 0.5, life: 0.45, max: 0.45,
+                        color: def.color, arte: 'muralha',
+                        giro: Math.random() * 6.2832, escala: 1.5, espalha: 0.3 });
     game.invalidateBuildCache();
     return true;
   }

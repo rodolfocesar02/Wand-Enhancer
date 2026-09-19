@@ -33,6 +33,27 @@ const Trail = {
     this.cv.width = Math.ceil(CONFIG.boardW * this.ESCALA);
     this.cv.height = Math.ceil(CONFIG.boardH * this.ESCALA);
     this.ctx = this.cv.getContext('2d');
+
+    /* As pegadas tem canvas proprio, e isso nao e organizacao -- e a unica
+     * forma de elas aparecerem.
+     *
+     * A trilha satura: depois de algumas dezenas de monstros o corredor esta
+     * no teto de opacidade, e uma pegada ESCURA carimbada ali dentro some,
+     * porque nao ha mais escuro para somar. Medido numa corrida de 4 ondas
+     * sem torre nenhuma: o corredor fica preto e a pegada e invisivel.
+     *
+     * Entao a pegada e CLARA -- terra revolvida, que e o que ela e de
+     * verdade -- e desenhada por cima da trilha. Quanto mais pisado o chao,
+     * mais ela contrasta, que e exatamente ao contrario da saturacao. */
+    /* E em resolucao CHEIA, nao na metade como a mancha.
+     * A mancha e um borrao radial -- meia resolucao nela e invisivel. A
+     * pegada e forma: garra, bota, casco. A meia resolucao um pe de 8px
+     * virava dois pontinhos claros e as oito silhuetas ficavam iguais, o
+     * que anula a razao de existirem. */
+    this.cvPasso = document.createElement('canvas');
+    this.cvPasso.width = CONFIG.boardW;
+    this.cvPasso.height = CONFIG.boardH;
+    this.ctxPasso = this.cvPasso.getContext('2d');
     this.carimbo = this.fazCarimbo(64);
     this.reset();
   },
@@ -72,6 +93,7 @@ const Trail = {
     this.versao += 1;
     if (!this.ctx) return;
     this.ctx.clearRect(0, 0, this.cv.width, this.cv.height);
+    this.ctxPasso.clearRect(0, 0, this.cvPasso.width, this.cvPasso.height);
   },
 
   /* Carimba a passagem do inimigo. Chamado pelo jogo a cada PASSO pixels
@@ -92,6 +114,53 @@ const Trail = {
     this.ctx.drawImage(this.carimbo,
       enemy.x * s - r, enemy.y * s - r, r * 2, r * 2);
     this.ctx.globalAlpha = 1;
+
+    this.pegada(enemy, s);
+  },
+
+  /* Pegada a cada terceiro carimbo, alternando os lados.
+   *
+   * Nao e por frequencia: a cada PASSO pixels ja e raro o bastante, e uma
+   * pegada em cada um viraria um borrao continuo -- exatamente a mancha que
+   * a trilha ja faz. Uma a cada tres deixa espaco entre elas.
+   *
+   * O custo e zero por quadro porque isto carimba no MESMO canvas
+   * persistente da trilha: desenha uma vez e fica. A pegada nao reduz a
+   * taxa de quadros numa onda cheia porque ela nao e redesenhada.
+   */
+  PASSO_PEGADA: 6,
+  DESVIO: 0.34,      // quanto a pegada sai do eixo, em raios do monstro
+
+  pegada(enemy, s) {
+    enemy._nPasso = (enemy._nPasso || 0) + 1;
+    if (enemy._nPasso % this.PASSO_PEGADA !== 0) return;
+
+    const img = PASSOS.para(enemy.type);
+    if (!img) return;
+
+    // Esquerda e direita alternadas, perpendicular a marcha.
+    const lado = (enemy._nPasso / this.PASSO_PEGADA) % 2 === 0 ? 1 : -1;
+    const nx = -Math.sin(enemy.angle) * enemy.radius * this.DESVIO * lado;
+    const ny = Math.cos(enemy.angle) * enemy.radius * this.DESVIO * lado;
+    const lar = enemy.radius * 1.15;
+
+    const c = this.ctxPasso;
+    c.save();
+    // Baixa de proposito: dezenas de monstros pisam a MESMA linha, e a
+    // 0,26 a rota virava uma faixa clara continua em vez de pegadas.
+    c.globalAlpha = 0.17;
+    c.translate(enemy.x + nx, enemy.y + ny);
+    // A arte aponta para CIMA; o angulo 0 do jogo aponta para a direita.
+    c.rotate(enemy.angle + Math.PI / 2);
+    if (lado < 0) c.scale(-1, 1);        // espelha o pe do outro lado
+    c.drawImage(img, -lar / 2, -lar / 2, lar, lar);
+    // A forma vem preta; 'source-atop' pinta dentro dela sem vazar para
+    // fora, entao a pegada sai clara sem precisar de uma segunda arte.
+    c.globalCompositeOperation = 'source-atop';
+    c.globalAlpha = 1;
+    c.fillStyle = '#d9c9a8';
+    c.fillRect(-lar / 2, -lar / 2, lar, lar);
+    c.restore();
   },
 
   /* O carimbo acumula ate saturar, mas a camada e desenhada com opacidade
@@ -99,11 +168,17 @@ const Trail = {
    * mapa exatamente onde o jogador mais olha. */
   TETO: 0.58,
 
+  TETO_PASSO: 0.5,
+
   draw(ctx) {
     if (!this.cv) return;
     ctx.save();
     ctx.globalAlpha = this.TETO;
     ctx.drawImage(this.cv, 0, 0, CONFIG.boardW, CONFIG.boardH);
+    // Depois da trilha, nunca antes: a graca e a pegada clara contra o
+    // sulco escuro que ela mesma ajudou a cavar.
+    ctx.globalAlpha = this.TETO_PASSO;
+    ctx.drawImage(this.cvPasso, 0, 0, CONFIG.boardW, CONFIG.boardH);
     ctx.restore();
   }
 };

@@ -211,6 +211,13 @@ canvas {
 }
 .shop-chip.selected { border-color: var(--text); background: #223054; }
 .swatch { width: 16px; height: 16px; border-radius: 5px; flex: none; }
+/* Com arte, o quadrado cresce e a cor vira contorno: a silhueta e o que o
+ * olho usa para achar a torre, a cor so confirma. */
+.swatch.art {
+  width: 30px; height: 30px; border-radius: 7px;
+  background-size: contain; background-repeat: no-repeat; background-position: center;
+  border: 1px solid transparent;
+}
 .chip-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .price { color: var(--gold); font-weight: 700; font-variant-numeric: tabular-nums; margin-left: auto; }
 .chip-key {

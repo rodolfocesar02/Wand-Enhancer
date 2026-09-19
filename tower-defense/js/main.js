@@ -9,6 +9,8 @@
   SpriteSheet.load();
   MobSheet.load();
   VFXSheet.load();
+  IconSheet.load();
+  PASSOS.load();
   Terrain.load();
   Trail.init();
   Perigo.init();

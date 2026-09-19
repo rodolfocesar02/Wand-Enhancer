@@ -719,6 +719,12 @@ class Game {
       this.effects.push({ x: torre.x, y: torre.y, radius: CONFIG.tile * 0.5,
                           life: 0.55, max: 0.55, color: '#cbd5e1', arte: 'detrito',
                           giro: Math.random() * 6.2832, escala: 1.15, espalha: 0.45 });
+      // A fumaca dura mais que o entulho e cobre a celula vazia: sem ela o
+      // buraco no labirinto aparece seco, no mesmo quadro, e le como falha
+      // de desenho em vez de desabamento.
+      this.effects.push({ x: torre.x, y: torre.y, radius: CONFIG.tile * 0.55,
+                          life: 0.95, max: 0.95, color: '#cbd5e1', arte: 'fumaca',
+                          giro: Math.random() * 6.2832, escala: 1.5, espalha: 0.85 });
       this.effects.push({ kind: 'shards', x: torre.x, y: torre.y, radius: CONFIG.tile * 0.4,
                           life: 0.45, max: 0.45, color: '#94a3b8' });
       this.emit();
