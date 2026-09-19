@@ -146,3 +146,6 @@ appsettings.json
 .tmp
 .source
 web-panel/bridge/wand-remote-bridge.cjs
+# Python bytecode das ferramentas
+__pycache__/
+*.pyc

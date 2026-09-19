@@ -126,19 +126,23 @@ def salva(resposta, destino):
 
 
 def gera(prompt, destino, ref=None, modelo=None, tamanho='1024x1024',
-         fundo='opaque', chave=None):
+         fundo='opaque', chave=None, qualidade='medium'):
     modelo = modelo or os.environ.get('OPENAI_IMAGE_MODEL') or \
         le_dotenv(os.path.join(AQUI, '.env')).get('OPENAI_IMAGE_MODEL') or 'gpt-image-1'
 
     if ref:
         # /edits: e este endpoint que resolve "o mesmo bicho, outro passo".
         campos = {'model': modelo, 'prompt': prompt, 'size': tamanho}
+        if qualidade:
+            campos['quality'] = qualidade
         arquivos = [('image[]', r) for r in (ref if isinstance(ref, list) else [ref])]
         resp = post_multipart('/images/edits', campos, arquivos, chave)
     else:
         corpo = {'model': modelo, 'prompt': prompt, 'size': tamanho, 'n': 1}
         if fundo:
             corpo['background'] = fundo
+        if qualidade:
+            corpo['quality'] = qualidade
         resp = post_json('/images/generations', corpo, chave)
     return salva(resp, destino)
 
@@ -156,6 +160,9 @@ def main():
     p.add_argument('--tamanho', default='1024x1024')
     p.add_argument('--fundo', default='opaque',
                    choices=['opaque', 'transparent', 'auto'])
+    p.add_argument('--qualidade', default='medium',
+                   choices=['low', 'medium', 'high', 'auto'],
+                   help='custo escala com isso; medium ja serve para sprite de 26px')
     p.add_argument('--sem-chave', action='store_true',
                    help='a chave e injetada pelo proxy do ambiente')
     p.add_argument('--testar', action='store_true',
@@ -182,13 +189,14 @@ def main():
             destino = os.path.join(args.pasta, r['saida'])
             print('[%d/%d] %s' % (i + 1, len(receitas), destino), flush=True)
             gera(r['prompt'], destino, r.get('ref'), args.modelo,
-                 r.get('tamanho', args.tamanho), r.get('fundo', args.fundo), chave)
+                 r.get('tamanho', args.tamanho), r.get('fundo', args.fundo), chave,
+                 r.get('qualidade', args.qualidade))
         return
 
     if not args.prompt or not args.saida:
         p.error('use --prompt e --saida, ou --lote')
     print(gera(args.prompt, os.path.join(args.pasta, args.saida), args.ref,
-               args.modelo, args.tamanho, args.fundo, chave))
+               args.modelo, args.tamanho, args.fundo, chave, args.qualidade))
 
 
 if __name__ == '__main__':
