@@ -814,6 +814,31 @@ class Game {
     return true;
   }
 
+  /* Aviso de habilidade lancada.
+   *
+   * O jogador precisa saber TRES coisas no mesmo instante: que algo foi
+   * lancado, de quem partiu e em quem caiu. Um texto so responde a primeira.
+   * Por isso vai um floater no conjurador e um efeito no alvo -- a ligacao
+   * entre os dois e o que transforma "minha torre parou" em "aquele
+   * Necromante calou minha torre".
+   */
+  avisoHabilidade(fonte, hab, alvo) {
+    if (!hab) return;
+    if (this.floaters.length < 26) {
+      this.notify(hab.nome, fonte.x, fonte.y - fonte.radius - 6, hab.cor);
+    }
+    if (this.effects.length > 90) return;
+
+    const alvoX = alvo ? alvo.x : fonte.x;
+    const alvoY = alvo ? alvo.y : fonte.y;
+    const arte = hab === HABILIDADES.pressa ? 'furia' : 'arcano';
+    this.effects.push({
+      x: alvoX, y: alvoY, radius: CONFIG.tile * 0.34,
+      life: 0.42, max: 0.42, color: hab.cor, arte: arte,
+      giro: Math.random() * 6.2832, escala: 1.25, espalha: 0.5
+    });
+  }
+
   /* Clarão na boca de tiro, disparado pela torre no instante do tiro. */
   muzzle(x, y, angle, color) {
     if (this.effects.length > 90) return;

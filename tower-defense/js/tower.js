@@ -50,6 +50,8 @@ class Tower {
     this.y = (r + 0.5) * tile;
     this.destruida = false;
     this.golpe = 0;          // clarao de quando a torre apanha
+    this.debuff = 0;         // maldicao: fracao a mais de recarga
+    this.debuffTimer = 0;
     // Obra: nao bloqueia o caminho nem atira ate terminar.
     this.obraTotal = CONFIG.obra ? CONFIG.obraBase + this.def.cost * CONFIG.obraPorOuro : 0;
     this.obra = this.obraTotal;
@@ -94,6 +96,17 @@ class Tower {
   alongarObra(passos) {
     this.obraTotal += passos * CONFIG.obraPorPasso;
     this.obra = this.obraTotal;
+  }
+
+  /* Maldicao do Necromante: alonga a recarga por um tempo.
+   *
+   * Nao zera o tiro de proposito. Torre muda nao da retorno nenhum ao
+   * jogador -- ele so ve a onda passar e nao sabe por que. Atirando devagar,
+   * o anel roxo e o ritmo quebrado dizem que ALGUMA coisa esta errada ali, e
+   * o jogador tem o que investigar. */
+  amaldicoar(forca, duracao) {
+    if (forca >= this.debuff) { this.debuff = forca; this.debuffTimer = duracao; }
+    else this.debuffTimer = Math.max(this.debuffTimer, duracao * 0.5);
   }
 
   get pronta() { return this.obra <= 0; }
@@ -178,8 +191,11 @@ class Tower {
       if (e.dead || e.escaped) continue;
       if (Math.hypot(e.x - this.x, e.y - this.y) > range + e.radius) continue;
 
+      // 'best === null' nao e redundancia: quem esta numa celula sem rota
+      // devolve MAX_SAFE_INTEGER, e com so o '<' ele nunca era escolhido --
+      // ficava imune por acidente. Agora vira alvo de ultimo caso.
       const p = e.progress();
-      if (p < bestProgress) { bestProgress = p; best = e; }
+      if (best === null || p < bestProgress) { bestProgress = p; best = e; }
     }
     return best;
   }
@@ -187,6 +203,10 @@ class Tower {
   update(dt, enemies, projectiles, rateBonus, mods, game) {
     if (!this.pronta) return;   // em obra: nao mira, nao atira
     if (this.cooldown > 0) this.cooldown -= dt;
+    if (this.debuffTimer > 0) {
+      this.debuffTimer -= dt;
+      if (this.debuffTimer <= 0) this.debuff = 0;
+    }
     if (this.aquecer > 0) this.aquecer -= dt;
     if (this.recoil > 0) this.recoil -= dt * 5;
     if (this.golpe > 0) this.golpe -= dt;
@@ -202,7 +222,7 @@ class Tower {
     if (this.mudo || this.aquecer > 0) return;
     if (this.cooldown > 0) return;
 
-    this.cooldown = this.stats.cooldown / (1 + (rateBonus || 0));
+    this.cooldown = this.stats.cooldown * (1 + this.debuff) / (1 + (rateBonus || 0));
     this.fullCooldown = this.cooldown;   // o sprite lê a recarga para escolher o quadro
     this.recoil = 1;
 

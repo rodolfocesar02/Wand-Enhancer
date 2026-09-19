@@ -383,6 +383,7 @@ const Renderer = {
     ctx.restore();
 
     this.towerBadges(ctx, tower, t);
+    this.towerMaldita(ctx, tower, t);
     this.towerMute(ctx, tower, t);
     this.towerHp(ctx, tower, t);
   },
@@ -390,6 +391,27 @@ const Renderer = {
   /* Vida da torre. So aparece quando ela ja apanhou: uma barra permanente em
    * cada torre poluiria o tabuleiro inteiro para informar que nada aconteceu.
    * Quando aparece, e a coisa mais urgente na tela. */
+  /* Anel roxo pulsante na torre amaldicoada.
+   *
+   * O sintoma da maldicao e a torre atirar devagar, e cadencia e a coisa
+   * mais dificil de notar numa onda cheia -- o jogador so ve os monstros
+   * passando. O anel e o que liga o sintoma a causa, e ele pulsa no ritmo
+   * porque estatico ele viraria mais um contorno entre tantos. */
+  towerMaldita(ctx, tower, t) {
+    if (tower.debuffTimer <= 0) return;
+    const p = 0.5 + 0.5 * Math.sin(this._clock * 7);
+    ctx.save();
+    ctx.strokeStyle = HABILIDADES.debuff.cor;
+    ctx.globalAlpha = 0.45 + p * 0.45;
+    ctx.lineWidth = 2.4;
+    ctx.setLineDash([5, 4]);
+    ctx.lineDashOffset = -this._clock * 22;
+    ctx.beginPath();
+    ctx.arc(tower.x, tower.y, t * 0.42 + p * 1.8, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  },
+
   towerHp(ctx, tower, t) {
     if (tower.golpe > 0) {
       ctx.save();
@@ -653,6 +675,37 @@ const Renderer = {
         ctx.fill();
       }
 
+      // Sombra projetada do voador. E o unico jeito de a altura aparecer num
+      // jogo visto de cima: sem ela, o Demonio passando por cima de uma
+      // torre le como bug de colisao, nao como voo.
+      if (e.voa) {
+        ctx.save();
+        ctx.globalAlpha = 0.34;
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.ellipse(e.x + 9, e.y + 13, e.radius * 0.8, e.radius * 0.46, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      if (e.pressa > 0) {
+        // Rastro ambar contra o sentido da marcha: pressa se le como
+        // movimento, nao como aura parada.
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        ctx.strokeStyle = HABILIDADES.pressa.cor;
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        for (let i = -1; i <= 1; i++) {
+          const a = e.angle + Math.PI + i * 0.42;
+          ctx.moveTo(e.x + Math.cos(a) * (e.radius + 2), e.y + Math.sin(a) * (e.radius + 2));
+          ctx.lineTo(e.x + Math.cos(a) * (e.radius + 13), e.y + Math.sin(a) * (e.radius + 13));
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
       // O tranco é só deslocamento de desenho -- a posição real nunca muda.
       const kx = e.knock > 0 ? -Math.cos(e.angle) * e.knock * 4 : 0;
       const ky = e.knock > 0 ? -Math.sin(e.angle) * e.knock * 4 : 0;
@@ -665,7 +718,10 @@ const Renderer = {
         // O sprite ja vem tingido pelo afixo; girar so o desenho mantem o
         // circulo de colisao intacto.
         ctx.rotate(e.angle + (mob.angleOffset || 0));
-        const size = (e.radius * 2) / mob.bodyRatio;
+        // Voando ele aparece maior que o circulo de colisao: perspectiva,
+        // nao vantagem -- o raio de acerto nao muda.
+        const alto = e.voa ? 1.16 : (e.escalando > 0 ? 1.1 : 1);
+        const size = (e.radius * 2) / mob.bodyRatio * alto;
         const imgs = mob.tinted[e.affixKey] || mob.images;
         ctx.drawImage(imgs[MobSheet.frameFor(mob, e)], -size / 2, -size / 2, size, size);
         if (e.hitFlash > 0) {

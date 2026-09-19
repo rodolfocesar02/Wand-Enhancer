@@ -570,7 +570,8 @@ const ENEMY_TYPES = {
   tanque: { name: 'Tanque', hp: 245,  speed: 34,  gold: 24,  radius: 20, shape: 'hexagono',
             color: '#818cf8', leak: 2, medo: 'afoito',    paciencia: 3.6, ataque: 60 },
   bruxo:  { name: 'Bruxo',  hp: 120,  speed: 62,  gold: 18,  radius: 16, shape: 'estrela',
-            color: '#f472b6', leak: 2, medo: 'cauteloso', paciencia: 5.6, ataque: 22 },
+            color: '#f472b6', leak: 2, medo: 'cauteloso', paciencia: 5.6, ataque: 22,
+            habilidade: 'pressa' },
   chefe:  { name: 'Chefe',  hp: 1700, speed: 31,  gold: 170, radius: 29, shape: 'chefe',
             color: '#f43f5e', leak: 6, medo: 'cauteloso', paciencia: 3.0, ataque: 170 },
 
@@ -605,23 +606,93 @@ const ENEMY_TYPES = {
   cavaleiro: { name: 'Cavaleiro', hp: 62,  speed: 53,  gold: 8,   radius: 16, shape: 'triangulo',
                color: '#a8a29e', leak: 1, medo: 'normal',    paciencia: 5.4, ataque: 16 },
   demonio:   { name: 'Demônio',   hp: 62,  speed: 60,  gold: 8,   radius: 16, shape: 'triangulo',
-               color: '#fb923c', leak: 1, medo: 'afoito',    paciencia: 4.6, ataque: 20 },
+               color: '#fb923c', leak: 1, medo: 'afoito',    paciencia: 4.6, ataque: 20,
+               habilidade: 'voo' },
 
   // corrente do Veloz: 8
   aranha:    { name: 'Aranha',    hp: 42,  speed: 108, gold: 11,  radius: 12, shape: 'losango',
-               color: '#a3e635', leak: 1, medo: 'afoito',    paciencia: 10.5, ataque: 6 },
+               color: '#a3e635', leak: 1, medo: 'afoito',    paciencia: 10.5, ataque: 6,
+               habilidade: 'passagem' },
 
   // corrente do Bruxo: 10 -> 16
   arqueiro:  { name: 'Arqueiro',  hp: 120, speed: 64,  gold: 18,  radius: 15, shape: 'estrela',
-               color: '#e879f9', leak: 2, medo: 'cauteloso', paciencia: 5.2, ataque: 24 },
+               color: '#e879f9', leak: 2, medo: 'cauteloso', paciencia: 5.2, ataque: 24,
+               habilidade: 'pressa' },
   necromante:{ name: 'Necromante',hp: 120, speed: 59,  gold: 18,  radius: 16, shape: 'estrela',
-               color: '#c084fc', leak: 2, medo: 'cauteloso', paciencia: 4.8, ataque: 28 },
+               color: '#c084fc', leak: 2, medo: 'cauteloso', paciencia: 4.8, ataque: 28,
+               habilidade: 'debuff' },
 
   // corrente do Tanque: 12 -> 18
   ogro:      { name: 'Ogro',      hp: 245, speed: 35,  gold: 24,  radius: 21, shape: 'hexagono',
                color: '#94a3b8', leak: 2, medo: 'afoito',    paciencia: 3.2, ataque: 70 },
   golem:     { name: 'Golem',     hp: 245, speed: 32,  gold: 24,  radius: 22, shape: 'hexagono',
                color: '#78716c', leak: 2, medo: 'afoito',    paciencia: 2.6, ataque: 88 }
+};
+
+/* --------------------------------------------------- habilidades ----------
+ *
+ * Uma habilidade por TIPO, e so em alguns tipos. Se todo monstro voasse ou
+ * atravessasse, o labirinto -- que e a decisao central da partida -- viraria
+ * decoracao. A graca e o jogador ter que responder a UMA excecao por vez:
+ * "essa linha nao segura o Demonio", "aquela torre para de atirar quando o
+ * Necromante chega".
+ *
+ * Todas custam O(n) num INTERVALO, nunca por quadro: numa onda cheia sao
+ * dezenas de monstros a 60fps, e habilidade que roda todo quadro e um
+ * orcamento de quadro que some.
+ */
+const HABILIDADES = {
+  /* Necromante: cala a melhor torre por perto. */
+  debuff: {
+    nome: 'Maldição', cor: '#c084fc',
+    raio: 2.6,          // em celulas
+    intervalo: 5.0,     // s entre lancamentos
+    duracao: 3.4,       // s de torre amaldicoada
+    forca: 0.60         // recarga da torre fica 60% mais longa
+  },
+
+  /* Bruxo: apressa o aliado mais adiantado. */
+  pressa: {
+    nome: 'Pressa', cor: '#f59e0b',
+    raio: 3.2,
+    intervalo: 5.5,
+    duracao: 3.6,
+    forca: 0.50         // +50% de velocidade
+  },
+
+  /* Demonio: voa. Ignora o labirinto inteiro e vai reto para a saida.
+   *
+   * E a habilidade mais cara em equilibrio e a mais barata em codigo -- a
+   * resposta do jogador e obvia e legitima: torre perto da saida. Por isso
+   * ela entra num tipo so, e tarde (onda 21). */
+  voo: { nome: 'Voo', cor: '#fb923c' },
+
+  /* Aranha: escala UMA torre por travessia, e escolhe qual.
+   *
+   * Nao e passe livre: ela so gasta quando o labirinto ja custou caro
+   * (folga acima do limite), e so uma vez. Depois disso anda como todo
+   * mundo. A escolha e dela -- a primeira parede que valer a pena. */
+  passagem: {
+    nome: 'Escalada', cor: '#a3e635',
+    /* O gatilho NAO e a folga, e foi preciso medir para descobrir.
+     *
+     * A folga e medida da celula atual ate a saida, entao ela e alta so na
+     * largada e encolhe a cada passo. Medido: numa serpentina cheia, a
+     * Aranha so via folga acima de 1,4 na PROPRIA casa de nascimento, onde
+     * nao ha torre nenhuma encostada -- a condicao "folga alta E parede ao
+     * lado" praticamente nunca coincidia, e ela nunca escalou nada.
+     *
+     * O gatilho certo e direto: quantos passos a escalada ECONOMIZA. Compara
+     * a rota real que falta daqui com a rota real do outro lado da parede,
+     * descontando as duas casas da travessia. Isso mede exatamente o que
+     * interessa -- "essa parede esta no meu caminho" -- e e a escolha que o
+     * jogador le como decisao: ela pula a parede que encurta, nao a primeira
+     * que encosta.
+     */
+    ganho: 6,           // so escala se economizar pelo menos isso em casas
+    usos: 1,
+    tempo: 0.9          // s escalando, parada e vulneravel
+  }
 };
 
 /* Rotulo legivel de cada classe, usado na dica do jogo. */
