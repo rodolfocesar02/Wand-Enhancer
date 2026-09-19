@@ -40,6 +40,10 @@ const UI = {
       reportText: document.getElementById('report-text'),
       reportCopy: document.getElementById('report-copy'),
       medo: document.getElementById('btn-medo'),
+      lastReport: document.getElementById('last-report-block'),
+      lastReportHint: document.getElementById('last-report-hint'),
+      lastReportText: document.getElementById('last-report-text'),
+      lastReportCopy: document.getElementById('last-report-copy'),
       repairAll: document.getElementById('btn-repair-all'),
       tmName: document.getElementById('tm-name'),
       tmClose: document.getElementById('tm-close'),
@@ -86,22 +90,28 @@ const UI = {
     this.armTwice(this.el.quit, 'Abandonar', 'Abandonar mesmo? Clique de novo', () => g.endRun(false));
     this.el.overlayBtn.addEventListener('click', () => g.toMenu());
 
-    /* Copiar dentro de um iframe pode ser bloqueado, entao a área de texto é
-     * a via garantida e a API é só o atalho. */
-    this.el.reportCopy.addEventListener('click', () => {
-      const txt = this.el.reportText;
-      txt.select();
-      txt.setSelectionRange(0, txt.value.length);
-      const pronto = () => {
-        this.el.reportCopy.textContent = 'Copiado';
-        setTimeout(() => { this.el.reportCopy.textContent = 'Copiar relatório'; }, 1800);
-      };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(txt.value).then(pronto, () => {});
-      } else { try { document.execCommand('copy'); pronto(); } catch (e) {} }
-    });
+    this.el.lastReportCopy.addEventListener('click',
+      () => this.copiar(this.el.lastReportText, this.el.lastReportCopy));
+    this.el.reportCopy.addEventListener('click',
+      () => this.copiar(this.el.reportText, this.el.reportCopy));
 
     window.addEventListener('resize', () => { if (g.menuTower) this.placeMenu(g.menuTower); });
+  },
+
+  /* Copiar dentro de um iframe pode ser bloqueado, então a área de texto é a
+   * via garantida e a API do navegador é só o atalho. Usado pelos dois
+   * relatórios: o do fim de partida e o guardado no menu. */
+  copiar(campo, botao) {
+    campo.select();
+    campo.setSelectionRange(0, campo.value.length);
+    const rotulo = botao.textContent;
+    const pronto = () => {
+      botao.textContent = 'Copiado';
+      setTimeout(() => { botao.textContent = rotulo; }, 1800);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(campo.value).then(pronto, () => {});
+    } else { try { document.execCommand('copy'); pronto(); } catch (e) { /* ignora */ } }
   },
 
   /* Confirmação em dois cliques em vez de confirm(): o diálogo nativo do
@@ -143,6 +153,18 @@ const UI = {
   syncMenu() {
     const st = Meta.state;
     const bonus = Meta.bonuses();
+
+    // Relatório da última expedição: sobrevive ao fechamento da aba.
+    const ultimo = ultimoRelatorio();
+    this.el.lastReport.hidden = !ultimo;
+    if (ultimo) {
+      const dia = new Date(ultimo.quando);
+      this.el.lastReportHint.textContent =
+        (ultimo.venceu ? 'Venceu' : 'Caiu na onda ' + ultimo.onda) +
+        ' em ' + ultimo.mapa + ', com ' + ultimo.vidas + ' vidas — ' +
+        dia.toLocaleDateString() + ' ' + dia.toLocaleTimeString().slice(0, 5);
+      this.el.lastReportText.value = ultimo.texto;
+    }
 
     this.el.metaXp.textContent = st.xp;
     this.el.metaStats.innerHTML =

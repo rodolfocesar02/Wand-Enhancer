@@ -5,6 +5,16 @@
  * Isso e proposital -- a partida inteira roda sem tela, o que permite medir
  * o balanceamento por simulacao em vez de chutar. */
 
+const RELATORIO_KEY = 'td_ultimo_relatorio';
+
+/* Ultimo relatorio guardado, ou null. Lido pela tela de menu. */
+function ultimoRelatorio() {
+  try {
+    const raw = localStorage.getItem(RELATORIO_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) { return null; }
+}
+
 class Game {
   constructor() {
     this.listeners = [];
@@ -99,6 +109,24 @@ class Game {
     this.ondaStats = this.novaOndaStats();
   }
 
+  /* O relatorio sobrevive ao fim da partida.
+   *
+   * Existe porque ja se perdeu duas vezes: a tela de fim fecha e o unico
+   * registro do que aconteceu vai junto. Guardar o ultimo custa uma linha de
+   * localStorage e devolve o instrumento. */
+  guardaRelatorio() {
+    try {
+      localStorage.setItem(RELATORIO_KEY, JSON.stringify({
+        quando: Date.now(),
+        mapa: this.map.id,
+        venceu: this.screen === 'victory',
+        onda: this.wave,
+        vidas: this.lives,
+        texto: this.relatorio()
+      }));
+    } catch (err) { /* navegador sem localStorage: segue sem guardar */ }
+  }
+
   /* Texto pronto para colar de volta numa conversa. Tabela, nao prosa: o que
    * se quer daqui e comparar partidas, nao ler. */
   relatorio() {
@@ -154,6 +182,7 @@ class Game {
     }
     this.screen = won ? 'victory' : 'gameover';
     this.lastXp = Meta.awardRun(this.wave, this.score, won);
+    this.guardaRelatorio();
     this.emit();
   }
 

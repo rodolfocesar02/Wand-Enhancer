@@ -98,6 +98,17 @@ button.big { padding: 15px 34px; font-size: 17px; }
 .meta-card:disabled .meta-cost { color: var(--muted); }
 .meta-lvl { color: var(--muted); font-size: 11.5px; }
 
+/* O relatório da última expedição vive no menu.
+ *
+ * A tela de fim de partida fecha e levava o único registro junto -- aconteceu
+ * duas vezes. Guardado em localStorage, ele sobrevive ao fechamento da aba. */
+#last-report-text {
+  width: 100%; margin-bottom: 8px;
+  font: 11px/1.4 ui-monospace, monospace;
+  background: #0d1424; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px; resize: vertical;
+}
+
 .menu-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 
 /* ============================== PARTIDA ============================== */
