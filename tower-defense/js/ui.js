@@ -512,6 +512,16 @@ const UI = {
              '. Esc cancela.';
     } else if (g.spellbook.pending) {
       text = 'Toque no mapa para lançar ' + SPELLS[g.spellbook.pending].name + '.';
+    } else if (g.screen === 'playing' && g.towers.some(t => !t.pronta && !t.destruida)) {
+      /* Andaime nao atira, e isso custou um quarto das vidas de um jogador
+       * na onda 1: ele pos as torres na entrada, chamou a onda e viu tudo
+       * passar por cima de tres construcoes. O andaime ja aparece no
+       * tabuleiro, mas so diz "tem algo aqui" -- nao diz que aquilo nao
+       * defende. A linha diz. */
+      const n = g.towers.filter(t => !t.pronta && !t.destruida).length;
+      text = n === 1 ? 'Torre em obra — ela não atira até terminar.'
+                     : n + ' torres em obra — elas não atiram até terminar.';
+
     } else if (g.screen === 'playing' && !g.waveInProgress && g.restTimer > 0) {
       const next = Waves.preview(g.wave + 1);
       // A estreia vem antes dos afixos: e a unica informacao da linha que o

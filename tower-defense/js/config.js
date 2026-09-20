@@ -79,8 +79,23 @@ const CONFIG = {
    * unico custo seria dano atrasado -- o inimigo andaria o caminho longo de
    * graca, que e o oposto do que se quer. */
   obra: true,
-  obraBase: 2.2,
-  obraPorOuro: 0.014,       // Arqueira ~2,9s; Balista ~4,2s
+  /* 0,3 e o conserto de uma armadilha que eu mesmo criei.
+   *
+   * Com 2,2 de base fixa, uma Arqueira levava 2,9s para ficar pronta. O
+   * primeiro movimento natural do jogador e por torre perto da ENTRADA e
+   * chamar a onda, e os grunts chegam la em cerca de um segundo: eles
+   * passavam pelo andaime. Medido nesse cenario exato, com 2,2 vazam 5 dos
+   * 6 monstros da onda 1 -- um quarto das vidas perdido antes de o jogo
+   * comecar, sem nada na tela explicando por que.
+   *
+   * A base fixa nunca serviu ao proposito da obra. Quem paga o tempo e quem
+   * ALONGA a rota, e isso vem de obraPorPasso: uma parede de labirinto que
+   * acrescenta 8 passos continua levando 7,8s (era 9,7). O que sumiu foi so
+   * o pedagio que a torre solta pagava a toa.
+   *
+   * Medido em 0,3: onda 1 vaza zero na mesma armadilha. */
+  obraBase: 0.3,
+  obraPorOuro: 0.014,       // Arqueira ~1,0s; Balista ~2,3s
 
   /* Segundos de obra por PASSO que a torre acrescenta na rota.
    *
