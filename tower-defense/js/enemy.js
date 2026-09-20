@@ -74,6 +74,9 @@ class Enemy {
       ? Math.random() * this.hab.intervalo : 0;
     this.pressa = 0;          // bonus de velocidade recebido de um aliado
     this.pressaTimer = 0;
+    this.dissipado = 0;       // s sem resistencia nenhuma (traco Dissipar)
+    this.brasa = 0;           // dano por segundo de queimadura
+    this.brasaTimer = 0;
     this.travessias = this.hab && this.hab.usos ? this.hab.usos : 0;
     this.escalando = 0;       // s restantes em cima da torre
     this.escalaDe = null;     // celula de onde saiu
@@ -148,8 +151,23 @@ class Enemy {
     }
   }
 
+  /* Dissipar zera a resistencia por alguns segundos. Nao e dano: e a torre
+   * errada virando a torre certa por uma janela, que e o unico jeito de uma
+   * fusao mudar a DECISAO do jogador e nao so o numero dela. */
+  dissipar(duracao) {
+    this.dissipado = Math.max(this.dissipado, duracao);
+  }
+
+  queimar(dps, duracao) {
+    if (dps >= this.brasa) { this.brasa = dps; this.brasaTimer = duracao; }
+    else this.brasaTimer = Math.max(this.brasaTimer, duracao * 0.5);
+  }
+
   takeHit(packet, mods) {
+    const guardada = this.resist;
+    if (this.dissipado > 0) this.resist = { fisico: 0, magico: 0 };
     const dealt = Damage.resolve(this, packet, mods);
+    this.resist = guardada;
     this.hp -= dealt;
     this.hitFlash = 0.12;
     this.lastSchool = Damage.dominant(packet);
@@ -171,6 +189,15 @@ class Enemy {
     if (this.pressaTimer > 0) {
       this.pressaTimer -= dt;
       if (this.pressaTimer <= 0) this.pressa = 0;
+    }
+    if (this.dissipado > 0) this.dissipado -= dt;
+    if (this.brasaTimer > 0) {
+      this.brasaTimer -= dt;
+      // A brasa NAO passa por resistencia: ela ja e o resultado de um acerto
+      // que passou. Reaplicar a reducao cobraria o pedagio duas vezes.
+      this.hp -= this.brasa * dt;
+      if (this.hp <= 0) { this.hp = 0; this.dead = true; return; }
+      if (this.brasaTimer <= 0) this.brasa = 0;
     }
     if (this.hab && this.hab.intervalo) {
       this.habTimer -= dt;
@@ -332,6 +359,21 @@ class Enemy {
       }
       if (alvo) {
         alvo.amaldicoar(this.hab.forca, this.hab.duracao);
+        game.avisoHabilidade(this, this.hab, alvo);
+      }
+      return;
+    }
+
+    if (this.habKey === 'dominar') {
+      let alvo = null, melhor = 0;
+      for (const t of game.towers) {
+        if (t.destruida || !t.pronta || t.dominada > 0) continue;
+        if (Math.hypot(t.x - this.x, t.y - this.y) > raio) continue;
+        const dps = Damage.dps(t.stats);
+        if (dps > melhor) { melhor = dps; alvo = t; }
+      }
+      if (alvo) {
+        alvo.dominar(this.hab.duracao);
         game.avisoHabilidade(this, this.hab, alvo);
       }
       return;

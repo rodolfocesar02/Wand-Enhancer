@@ -91,8 +91,40 @@ class Projectile {
       this.hitSet.push(e);
       onHit(e, e.takeHit(this.stats.dmg, this.mods), this.stats.dmg);
       if (this.stats.slow) e.applySlow(this.stats.slow, this.stats.slowDur);
+      this.aplicarTraco(e, enemies, effects, onHit);
 
       if (--this.pierce <= 0) { this.done = true; return; }
+    }
+  }
+
+  /* Tracos que agem NO IMPACTO. Tudo num lugar so, chamado dos dois ramos
+   * (respingo e direto) e tambem da perfuracao, para que nao exista um
+   * caminho de acerto que esqueca o traco. */
+  aplicarTraco(alvo, enemies, effects, onHit) {
+    const tr = this.stats.traco ? TRACOS[this.stats.traco] : null;
+    if (!tr || !alvo) return;
+
+    if (tr.dur) {                       // Dissipar
+      alvo.dissipar(tr.dur);
+    }
+
+    if (tr.salto) {                     // Corrente
+      let prox = null, perto = tr.alcance;
+      for (const e of enemies) {
+        if (e === alvo || e.dead || e.escaped || this.hitSet.indexOf(e) !== -1) continue;
+        const d = Math.hypot(e.x - alvo.x, e.y - alvo.y);
+        if (d < perto) { perto = d; prox = e; }
+      }
+      if (prox) {
+        this.hitSet.push(prox);
+        const pacote = { fisico: this.stats.dmg.fisico * tr.salto,
+                         magico: this.stats.dmg.magico * tr.salto };
+        onHit(prox, prox.takeHit(pacote, this.mods), pacote);
+        if (effects.length < 90) {
+          effects.push({ kind: 'raio', x: alvo.x, y: alvo.y, x2: prox.x, y2: prox.y,
+                         life: 0.16, max: 0.16, color: tr.cor });
+        }
+      }
     }
   }
 
@@ -105,11 +137,20 @@ class Projectile {
       effects.push({ x: this.x, y: this.y, radius: s.splash, life: 0.38, max: 0.38,
                      color: this.color, arte: Projectile.arteDe(s),
                      giro: Math.random() * 6.2832, escala: 1.0 });
+      const tr = s.traco ? TRACOS[s.traco] : null;
       for (const e of enemies) {
         if (e.dead || e.escaped) continue;
         if (Math.hypot(e.x - this.x, e.y - this.y) <= s.splash + e.radius) {
           onHit(e, e.takeHit(s.dmg, this.mods), s.dmg);
           if (s.slow) e.applySlow(s.slow, s.slowDur);
+          this.aplicarTraco(e, enemies, effects, onHit);
+          // Detonacao: a brasa e por ALVO atingido, nao uma zona no chao.
+          // Zona exigiria uma lista nova no jogo inteiro e um teste de area
+          // por quadro; a brasa no bicho da a mesma leitura -- ele continua
+          // perdendo vida depois do estouro -- por um contador em cada um.
+          if (tr && tr.brasaFrac) {
+            e.queimar((s.dmg.fisico + s.dmg.magico) * tr.brasaFrac, tr.brasaDur);
+          }
         }
       }
       this.done = true;
@@ -120,6 +161,7 @@ class Projectile {
     if (t && !t.dead && !t.escaped) {
       this.hitSet.push(t);
       onHit(t, t.takeHit(s.dmg, this.mods), s.dmg);
+      this.aplicarTraco(t, enemies, effects, onHit);
       if (s.slow) {
         t.applySlow(s.slow, s.slowDur);
         // O congelamento nao tinha arte nenhuma: so o disco ciano por baixo.

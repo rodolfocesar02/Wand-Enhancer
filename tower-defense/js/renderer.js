@@ -384,6 +384,7 @@ const Renderer = {
 
     this.towerBadges(ctx, tower, t);
     this.towerMaldita(ctx, tower, t);
+    this.towerDominada(ctx, tower, t);
     this.towerMute(ctx, tower, t);
     this.towerHp(ctx, tower, t);
   },
@@ -391,6 +392,44 @@ const Renderer = {
   /* Vida da torre. So aparece quando ela ja apanhou: uma barra permanente em
    * cada torre poluiria o tabuleiro inteiro para informar que nada aconteceu.
    * Quando aparece, e a coisa mais urgente na tela. */
+  /* Torre dominada: anel vermelho e o FEIXE ate a vitima.
+   *
+   * O anel sozinho nao bastaria. "Minha torre parou de atirar" e "minha
+   * torre esta demolindo a torre do lado" sao problemas diferentes com
+   * respostas diferentes, e so a linha entre as duas separa os dois casos.
+   * Ela e grossa e vermelha de proposito: e a unica coisa no tabuleiro que
+   * merece interromper o que o jogador estava fazendo. */
+  towerDominada(ctx, tower, t) {
+    if (tower.dominada <= 0) return;
+    const p = 0.5 + 0.5 * Math.sin(this._clock * 11);
+    ctx.save();
+
+    if (tower.vitima && !tower.vitima.destruida) {
+      ctx.strokeStyle = 'rgba(244,63,94,' + (0.5 + p * 0.4) + ')';
+      ctx.lineWidth = 3 + p * 1.6;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(tower.x, tower.y);
+      ctx.lineTo(tower.vitima.x, tower.vitima.y);
+      ctx.stroke();
+
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = 0.28 + p * 0.3;
+      ctx.strokeStyle = '#fecdd3';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.strokeStyle = HABILIDADES.dominar.cor;
+    ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    ctx.arc(tower.x, tower.y, t * 0.46 + p * 2.2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  },
+
   /* Anel roxo pulsante na torre amaldicoada.
    *
    * O sintoma da maldicao e a torre atirar devagar, e cadencia e a coisa
@@ -688,6 +727,34 @@ const Renderer = {
         ctx.restore();
       }
 
+      if (e.brasaTimer > 0) {
+        // Brasa por baixo do bicho, somada: ele continua perdendo vida
+        // depois do estouro e precisa parecer que esta queimando.
+        const p = 0.6 + 0.4 * Math.sin(game.elapsed * 13 + e.wobble);
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = 0.30 + p * 0.22;
+        ctx.fillStyle = TRACOS.detonacao.cor;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.radius * (0.9 + p * 0.22), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      if (e.dissipado > 0) {
+        // Anel branco: a resistencia dele esta desligada, entao o marcador
+        // de afixo que o jogador ve ao lado esta MENTINDO neste instante.
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,.75)';
+        ctx.lineWidth = 1.6;
+        ctx.setLineDash([2, 3]);
+        ctx.lineDashOffset = game.elapsed * 24;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.radius + 9, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
       if (e.pressa > 0) {
         // Rastro ambar contra o sentido da marcha: pressa se le como
         // movimento, nao como aura parada.
@@ -976,6 +1043,24 @@ const Renderer = {
         ctx.beginPath();
         ctx.arc(0, 0, 6 * k, 0, Math.PI * 2);
         ctx.fill();
+
+      } else if (fx.kind === 'raio') {
+        // Salto da Corrente: uma linha viva entre os dois alvos. Sem ela o
+        // segundo bicho perde vida sozinho e o jogador nao liga uma coisa
+        // a outra.
+        ctx.globalAlpha = k;
+        ctx.strokeStyle = fx.color;
+        ctx.lineWidth = 2.6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(fx.x, fx.y);
+        ctx.lineTo(fx.x2, fx.y2);
+        ctx.stroke();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = k * 0.6;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
 
       } else if (fx.kind === 'spark') {
         // Faísca no ponto de acerto, aberta contra o sentido da marcha.

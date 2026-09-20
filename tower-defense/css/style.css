@@ -185,6 +185,17 @@ canvas {
 .split i.f { background: var(--fisico); }
 .split i.m { background: var(--magico); }
 
+/* O traço da fusão não é mais um número na lista: é a regra que essa torre
+ * tem e as outras não. Caixa própria, cor própria, acima dos ramos. */
+.traco {
+  display: grid; gap: 2px; margin-bottom: 9px; padding: 7px 9px;
+  background: #16203a; border: 1px solid var(--line);
+  border-left-width: 3px; border-radius: 8px;
+}
+.traco[hidden] { display: none; }
+.traco strong { font-size: 12.5px; }
+.traco small { color: var(--muted); font-size: 11.5px; line-height: 1.35; }
+
 .branches, .fusion { display: grid; gap: 6px; margin-bottom: 9px; }
 .branch {
   display: grid; grid-template-columns: 1fr auto; gap: 2px 9px;

@@ -466,6 +466,71 @@ const FUSIONS = {
  * fala da torre, e nao de uma lista generica.
  *
  * O custo sai da soma das duas torres de origem, entao fusao cara sobe caro. */
+/* ------------------------------------------------- tracos de fusao -------
+ *
+ * Fusao que so muda numero e arte nao e fusao, e um nivel caro. Cada receita
+ * ganha UM traco -- uma regra que as torres base nao tem.
+ *
+ * Os tracos sao CINCO, nao quinze. Uma habilidade escrita a mao por receita
+ * envelheceria na primeira torre nova e viraria quinze lugares para esquecer
+ * de atualizar; aqui o traco sai da RECEITA por uma ordem de prioridade
+ * fixa, entao qualquer fusao futura ja nasce com um.
+ *
+ * A ordem existe porque quase toda receita tem dois pais com traco. Ela vai
+ * do mais especifico para o mais generico: quem tem gelo e uma torre de
+ * gelo antes de ser qualquer outra coisa.
+ */
+const TRACOS = {
+  gelo_profundo: {
+    nome: 'Gelo Profundo', cor: '#7dd3fc',
+    desc: 'Lentidão 40% mais forte e 60% mais longa.',
+    slowMul: 1.40, slowDurMul: 1.60
+  },
+  detonacao: {
+    nome: 'Detonação', cor: '#fb923c',
+    desc: 'O respingo deixa brasa que queima por 2s.',
+    brasaDur: 2.0, brasaFrac: 0.22      // fracao do dano por segundo
+  },
+  perfurar: {
+    nome: 'Transfixar', cor: '#60a5fa',
+    desc: '+1 perfuração, e cada alvo perfurado leva dano cheio.',
+    pierceExtra: 1
+  },
+  dissipar: {
+    nome: 'Dissipar', cor: '#c084fc',
+    desc: 'O acerto anula a resistência do alvo por 3s.',
+    dur: 3.0
+  },
+  corrente: {
+    nome: 'Corrente', cor: '#86efac',
+    desc: 'O tiro salta para um segundo alvo por 45% do dano.',
+    salto: 0.45, alcance: 86
+  }
+};
+
+/* Prioridade: o primeiro pai que aparecer na lista manda. */
+const TRACO_POR_PAI = [
+  ['glacial',  'gelo_profundo'],
+  ['bombarda', 'detonacao'],
+  ['balista',  'perfurar'],
+  ['arqueira', 'corrente'],
+  ['templo',   'dissipar'],
+  ['altar',    'dissipar']
+];
+/* A Arqueira precisa vir ANTES de Templo e Altar. Na primeira ordem ela era
+ * a ultima, e como toda receita com Arqueira tem um segundo pai de
+ * prioridade maior, o traco Corrente ficava com ZERO receitas -- codigo
+ * morto que parecia recurso. Com ela em quarto, as quinze receitas se
+ * repartem 5/4/3/2/1 entre os cinco tracos. */
+
+function tracoDaReceita(chave) {
+  const partes = chave.split('+');
+  for (const [pai, traco] of TRACO_POR_PAI) {
+    if (partes.indexOf(pai) !== -1) return traco;
+  }
+  return null;
+}
+
 const FUSAO_ESCADA = { 2: 1.15, 3: 2.00, 4: 3.40 };
 
 function ramoEspecial(def, nivel) {
@@ -501,6 +566,7 @@ function ramoEspecial(def, nivel) {
 function montaEvolucaoDasFusoes() {
   for (const chave of Object.keys(FUSIONS)) {
     const def = FUSIONS[chave];
+    def.traco = tracoDaReceita(chave);
     const partes = chave.split('+');
     const custoBase = TOWER_TYPES[partes[0]].cost + TOWER_TYPES[partes[1]].cost;
     const preco = n => Math.round(custoBase * FUSAO_ESCADA[n] / 5) * 5;
@@ -573,7 +639,8 @@ const ENEMY_TYPES = {
             color: '#f472b6', leak: 2, medo: 'cauteloso', paciencia: 5.6, ataque: 22,
             habilidade: 'pressa' },
   chefe:  { name: 'Chefe',  hp: 1700, speed: 31,  gold: 170, radius: 29, shape: 'chefe',
-            color: '#f43f5e', leak: 6, medo: 'cauteloso', paciencia: 3.0, ataque: 170 },
+            color: '#f43f5e', leak: 6, medo: 'cauteloso', paciencia: 3.0, ataque: 170,
+            habilidade: 'dominar' },
 
   /* --------------------------------------------------------- sucessores --
    *
@@ -666,6 +733,39 @@ const HABILIDADES = {
    * resposta do jogador e obvia e legitima: torre perto da saida. Por isso
    * ela entra num tipo so, e tarde (onda 21). */
   voo: { nome: 'Voo', cor: '#fb923c' },
+
+  /* Chefe: domina a melhor torre e vira ela contra a vizinha.
+   *
+   * E a habilidade mais perigosa do jogo, entao mora no monstro mais raro --
+   * o Chefe aparece nas ondas 10, 20 e 25 e mais nada. Esse e o limite, e ele
+   * e estrutural: nao depende de eu acertar um numero.
+   *
+   * O dano sai do DPS da PROPRIA torre dominada vezes DANO. Quem investiu
+   * numa torre forte sente mais quando ela vira contra o labirinto, o que e
+   * a ironia certa. E o alvo e a torre vizinha mais FRACA de vida: parede
+   * barata cai, torre cara aguenta -- entao a punicao e "seu muro de tijolo
+   * tem um custo", nao "voce perdeu a partida".
+   */
+  dominar: {
+    nome: 'Domínio', cor: '#f43f5e',
+    raio: 3.4,
+    intervalo: 10.0,
+    duracao: 3.0,
+    /* 1,5 e o terceiro valor, e os dois primeiros foram desastre.
+     *
+     * Com 6,0 uma Arqueira evoluida (42 de dps) demolia 252 por segundo
+     * durante 4s -- mil de dano, quase tres torres baratas -- e voltava a
+     * cada 7s. Medido: a corrida de referencia sem meta caiu de 19 para 11
+     * ondas e a intermediaria de 25 para 10, com o tabuleiro indo de 28
+     * torres para 9. O Chefe nao estava ameacando a defesa, estava apagando
+     * ela, e como ele entra na onda 10 a partida acabava ali.
+     *
+     * Com 1,5 a mesma torre tira 189 no total -- meia torre barata. Entao o
+     * Dominio derruba o que ja estava gasto e obriga a reparar, em vez de
+     * abrir a serpentina inteira. A perda maior continua sendo os 3s em que
+     * a torre para de atirar, e isso acontece justamente na onda de Chefe. */
+    dano: 1.5          // multiplicador sobre o dps da torre dominada
+  },
 
   /* Aranha: escala UMA torre por travessia, e escolhe qual.
    *

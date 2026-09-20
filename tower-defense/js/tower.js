@@ -52,6 +52,8 @@ class Tower {
     this.golpe = 0;          // clarao de quando a torre apanha
     this.debuff = 0;         // maldicao: fracao a mais de recarga
     this.debuffTimer = 0;
+    this.dominada = 0;       // s restantes virada contra as proprias vizinhas
+    this.vitima = null;      // torre que ela esta demolindo
     // Obra: nao bloqueia o caminho nem atira ate terminar.
     this.obraTotal = CONFIG.obra ? CONFIG.obraBase + this.def.cost * CONFIG.obraPorOuro : 0;
     this.obra = this.obraTotal;
@@ -88,6 +90,20 @@ class Tower {
       slowDur: b.slowDur ? b.slowDur * m.slowDur : 0,
       pierce: (b.pierce || 0) + m.pierce
     };
+
+    /* Traco da fusao. Os dois que sao puro numero entram aqui, no bloco de
+     * status, para que TUDO que le stats -- inspetor, dps, projetil -- veja
+     * o mesmo valor. Os outros tres sao comportamento de impacto e vivem no
+     * projetil; aqui so viaja a etiqueta. */
+    this._stats.traco = this.def.traco || null;
+    const tr = this._stats.traco ? TRACOS[this._stats.traco] : null;
+    if (tr && tr.slowMul && this._stats.slow) {
+      this._stats.slow = Math.min(0.92, this._stats.slow * tr.slowMul);
+      this._stats.slowDur *= tr.slowDurMul;
+    }
+    if (tr && tr.pierceExtra) {
+      this._stats.pierce += tr.pierceExtra;
+    }
   }
 
   get stats() { return this._stats; }
@@ -107,6 +123,14 @@ class Tower {
   amaldicoar(forca, duracao) {
     if (forca >= this.debuff) { this.debuff = forca; this.debuffTimer = duracao; }
     else this.debuffTimer = Math.max(this.debuffTimer, duracao * 0.5);
+  }
+
+  /* Dominio do Chefe: a torre para de defender e demole a vizinha mais
+   * fragil. Nao e "torre desligada" -- e torre trabalhando contra voce, que
+   * e uma perda dupla e, principalmente, VISIVEL: o feixe vermelho entre as
+   * duas diz o que esta acontecendo sem precisar de texto. */
+  dominar(duracao) {
+    this.dominada = Math.max(this.dominada, duracao);
   }
 
   get pronta() { return this.obra <= 0; }
@@ -200,12 +224,45 @@ class Tower {
     return best;
   }
 
+  /* Escolhe a vizinha mais FRACA de vida dentro do alcance e bate nela.
+   *
+   * Mais fraca, nao mais forte: assim o Dominio derruba a parede barata e
+   * abre um buraco no labirinto -- que e a ameaca interessante -- em vez de
+   * apagar a torre cara do jogador, que seria so perda seca.
+   *
+   * Sem projetil: o dano e continuo e o feixe conta a historia. Um projetil
+   * por quadro contra uma torre parada a um tile de distancia seria custo
+   * sem leitura. */
+  demolir(dt, game) {
+    if (!game) return;
+
+    if (!this.vitima || this.vitima.destruida ||
+        Math.hypot(this.vitima.x - this.x, this.vitima.y - this.y) > this.stats.range) {
+      let alvo = null, menor = Infinity;
+      for (const t of game.towers) {
+        if (t === this || t.destruida || !t.pronta) continue;
+        if (Math.hypot(t.x - this.x, t.y - this.y) > this.stats.range) continue;
+        if (t.hp < menor) { menor = t.hp; alvo = t; }
+      }
+      this.vitima = alvo;
+    }
+    if (!this.vitima) return;
+
+    this.angle = Math.atan2(this.vitima.y - this.y, this.vitima.x - this.x);
+    game.torreApanha(this.vitima, Damage.dps(this.stats) * HABILIDADES.dominar.dano * dt, null);
+  }
+
   update(dt, enemies, projectiles, rateBonus, mods, game) {
     if (!this.pronta) return;   // em obra: nao mira, nao atira
     if (this.cooldown > 0) this.cooldown -= dt;
     if (this.debuffTimer > 0) {
       this.debuffTimer -= dt;
       if (this.debuffTimer <= 0) this.debuff = 0;
+    }
+    if (this.dominada > 0) {
+      this.dominada -= dt;
+      if (this.dominada <= 0) { this.dominada = 0; this.vitima = null; }
+      else return this.demolir(dt, game);
     }
     if (this.aquecer > 0) this.aquecer -= dt;
     if (this.recoil > 0) this.recoil -= dt * 5;

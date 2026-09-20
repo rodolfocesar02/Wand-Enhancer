@@ -731,6 +731,11 @@ class Game {
       return;
     }
 
+    // Sem inimigo o dano veio de OUTRA TORRE (Dominio do Chefe). A lasca
+    // precisa de uma direcao e nao ha de onde tirar uma; o feixe vermelho
+    // entre as duas ja conta essa historia, entao aqui nao se desenha nada.
+    if (!inimigo) return;
+
     if (this.effects.length < 90 && Math.random() < 0.18) {
       // A lasca sai do lado do inimigo, nao do centro da torre: assim da para
       // ver QUEM esta batendo sem seguir a linha tracejada.

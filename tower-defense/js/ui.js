@@ -49,6 +49,7 @@ const UI = {
       tmClose: document.getElementById('tm-close'),
       tmSplit: document.getElementById('tm-split'),
       tmStats: document.getElementById('tm-stats'),
+      tmTraco: document.getElementById('tm-traco'),
       tmBranches: document.getElementById('tm-branches'),
       tmFusion: document.getElementById('tm-fusion'),
       tmSell: document.getElementById('tm-sell'),
@@ -276,6 +277,20 @@ const UI = {
     if (s.slow) rows.push(['Lentidão', Math.round(s.slow * 100) + '%']);
     if (s.pierce) rows.push(['Perfuração', s.pierce]);
     e.tmStats.innerHTML = rows.map(r => '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>').join('');
+
+    /* Traco da fusao. Fica FORA da lista de numeros de proposito: ele nao e
+     * um valor a comparar, e uma regra que essa torre tem e as outras nao --
+     * e o jogador precisa ler a regra, nao procurar a diferenca. */
+    const tr = t.def.traco ? TRACOS[t.def.traco] : null;
+    e.tmTraco.hidden = !tr;
+    if (tr) {
+      // A borda esquerda leva a cor do traco: no menu inteiro, e a unica
+      // faixa colorida, entao ela vira o marcador que diz "esta torre tem
+      // uma regra propria" antes mesmo de o texto ser lido.
+      e.tmTraco.style.borderLeftColor = tr.cor;
+      e.tmTraco.innerHTML = '<strong style="color:' + tr.cor + '">' + tr.nome +
+                            '</strong><small>' + tr.desc + '</small>';
+    }
 
     e.tmBranches.innerHTML = '';
     for (const branch of t.nextBranches) {
