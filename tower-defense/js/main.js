@@ -11,6 +11,9 @@
   VFXSheet.load();
   IconSheet.load();
   PASSOS.load();
+  // A pedra entra por variavel CSS em vez de ficar cravada na folha de
+  // estilo: assim o data URI mora num .js so, junto com o resto da arte.
+  document.documentElement.style.setProperty('--pedra', 'url(' + CENARIO.fundo + ')');
   Terrain.load();
   Trail.init();
   Perigo.init();

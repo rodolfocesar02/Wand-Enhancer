@@ -18,6 +18,7 @@ const UI = {
       screenMenu: document.getElementById('screen-menu'),
       screenGame: document.getElementById('screen-game'),
       metaXp: document.getElementById('meta-xp'),
+      brasao: document.getElementById('brasao'),
       metaStats: document.getElementById('meta-stats'),
       mapList: document.getElementById('map-list'),
       metaList: document.getElementById('meta-list'),
@@ -153,6 +154,7 @@ const UI = {
 
   syncMenu() {
     const st = Meta.state;
+    if (this.el.brasao && !this.el.brasao.src) this.el.brasao.src = CENARIO.brasao;
     const bonus = Meta.bonuses();
 
     // Relatório da última expedição: sobrevive ao fechamento da aba.
@@ -183,7 +185,14 @@ const UI = {
       const btn = document.createElement('button');
       btn.className = 'map-card' + (this.selectedMap === map.id ? ' selected' : '');
       btn.disabled = !unlocked;
-      btn.innerHTML = '<strong>' + map.name + '</strong><small>' +
+      /* A miniatura e o render do tabuleiro vazio daquele mapa. Antes o
+       * cartao dizia "pilares espalhados" e o jogador escolhia no escuro;
+       * agora ele ve onde a entrada, a saida e as pedras estao, que e a
+       * informacao de que a escolha depende. */
+      const mini = MINIMAPAS[map.id];
+      btn.innerHTML =
+        (mini ? '<span class="map-mini" style="background-image:url(' + mini + ')"></span>' : '') +
+        '<strong>' + map.name + '</strong><small>' +
         (unlocked ? map.desc : 'Bloqueado — compre em Reino.') + '</small>';
       btn.addEventListener('click', () => { this.selectedMap = map.id; this.syncMenu(); });
       this.el.mapList.appendChild(btn);
@@ -208,7 +217,19 @@ const UI = {
       const btn = document.createElement('button');
       btn.className = 'meta-card' + (owned ? ' owned' : '');
       btn.disabled = owned || !Meta.canBuy(def);
+      /* Os cartoes de torre e de magia ja tinham arte disponivel -- e a
+       * mesma do dock e da faixa -- e mesmo assim eram texto puro. Usar o
+       * que ja existe custa zero e faz o jogador reconhecer no menu a
+       * mesma coisa que vai reconhecer em campo. */
+      const ef = def.effect || {};
+      const arte = ef.unlockTower ? IconSheet.url('torre', ef.unlockTower)
+                 : ef.unlockSpell ? IconSheet.url('magia', ef.unlockSpell)
+                 : ef.unlockMap   ? MINIMAPAS[ef.unlockMap]
+                 : '';
+      const classe = ef.unlockMap ? 'meta-arte mapa' : 'meta-arte';
+      if (!arte) btn.className += ' sem-arte';
       btn.innerHTML =
+        (arte ? '<span class="' + classe + '" style="background-image:url(' + arte + ')"></span>' : '') +
         '<strong>' + def.name + (max > 1 ? ' <span class="meta-lvl">' + lvl + '/' + max + '</span>' : '') + '</strong>' +
         '<span class="meta-cost">' + (owned ? '✓' : cost + ' XP') + '</span>' +
         '<small>' + def.desc + '</small>';
